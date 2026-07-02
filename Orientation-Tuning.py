@@ -77,7 +77,8 @@ def process_file(filename, i, c, PROTOCOL, quantity):
         if quantity=='Deconvolved':
             data.build_Deconvolved()
 
-        try:
+        # try:
+        if True:
             Episodes = EpisodeData(data, 
                                     quantities=quantities,
                                     protocol_name=PROTOCOL,
@@ -101,15 +102,15 @@ def process_file(filename, i, c, PROTOCOL, quantity):
                                  'Tuning-%s-%i.npy' % (c, i)),
                     Tuning)
             print('      [v] --> included, n=%i ROIs ' % data.nROIs)
-        except BaseException as be:
-            print('                        [-------------------------------]')
-            print(be)
-            print()
-            print(filename)
-            print('nROIs=%i' % data.nROIs, ', protocols=%s' % data.protocols) 
-            print(Episodes.varied_parameters)
-            print('      [X] --> discarded, problem in datafile, CHECK [!!]')
-            print('                        [-------------------------------]')
+        # except BaseException as be:
+        #     print('                        [-------------------------------]')
+        #     print(be)
+        #     print()
+        #     print(filename)
+        #     print('nROIs=%i' % data.nROIs, ', protocols=%s' % data.protocols) 
+        #     print(Episodes.varied_parameters)
+        #     print('      [X] --> discarded, problem in datafile, CHECK [!!]')
+        #     print('                        [-------------------------------]')
 
     else:
         print('      [X] --> discarded, n=%i ROIs ' % data.nROIs)
