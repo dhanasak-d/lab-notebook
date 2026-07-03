@@ -14,11 +14,16 @@ from physion.analysis.read_NWB import Data,\
     scan_folder_for_NWBfiles
 
 from physion.analysis.episodes.build import EpisodeData
-from physion.dataviz.episodes.trial_average import plot as plot_trial_average
+from physion.dataviz.episodes.trial_average\
+              import plot as plot_trial_average
+
+# %%
 
 # %%
 PROTOCOLS = [\
-    'tuning-low-contrast'] # 'contrast-sensitivity'
+    'tuning-low-contrast',
+    'tuning-mid-contrast',
+    'tuning-high-contrast']
 
 folder = os.path.join(os.path.expanduser('~'), 
                 'DATA', 'Taddy', 'PN_shGrid1-2026', 'NWBs')
@@ -50,16 +55,10 @@ def process_file(filename, i, c, PROTOCOL, quantity):
     nMIN_ROIs = 4
 
     # statistical test for visually-evoked-responses
-    if quantity=='Deconvolved':
-        stat_test_props=dict(interval_pre=[-1.,-0.0],
-                            interval_post=[0.0, 1.0],                                   
-                            test='ttest',                                            
-                            sign='positive')
-    else:
-        stat_test_props=dict(interval_pre=[-1.,0],
-                            interval_post=[1.,2.],                                   
-                            test='ttest',                                            
-                            sign='positive')
+    stat_test_props=dict(interval_pre=[-1.,-0.0],
+                        interval_post=[0.0, 1.0],                                   
+                        test='ttest',                                            
+                        sign='positive')
 
     response_significance_threshold=5e-2
 
@@ -89,8 +88,7 @@ def process_file(filename, i, c, PROTOCOL, quantity):
                                                         stat_test_props = stat_test_props, 
                                                         response_significance_threshold =\
                                                             response_significance_threshold, 
-                                                        contrast =\
-                                                            float(c.split('contrast-')[1][:3]),
+                                                        contrast = Episodes.contrast[0],
                                                         verbose=True)
             Tuning['datafile'] = filename
             Tuning['nROIs_original'] = data.original_nROIs
@@ -185,7 +183,7 @@ for g in groups:
                     Tunings.append(Tuning)
 
             # # saving data
-            np.save(os.path.join(folder, 'Tunings_%s.npy' % c), Tunings)
+            np.save(os.path.join(folder, 'Tunings_%s_%s.npy' % (c, quantity)), Tunings)
 
         else:
             print()
@@ -204,20 +202,28 @@ from physion.analysis.protocols.orientation_tuning\
     import plot_orientation_tuning_curve, plot_selectivity
 
 for PROTOCOL in PROTOCOLS:
+    
+    fig, ax = plot_orientation_tuning_curve(\
+                            ['shRNA_%s_%s' % (PROTOCOL, quantity),
+                             'scramble_%s_%s' % (PROTOCOL, quantity)],
+                            average_by='sessions',
+                            path=folder)
+    fig.suptitle(PROTOCOL)
+
+    fig, ax = plot_orientation_tuning_curve(\
+                            ['shRNA_%s_%s' % (PROTOCOL, quantity),
+                             'scramble_%s_%s' % (PROTOCOL, quantity)],
+                            average_by='ROIs',
+                            path=folder)
+    fig.suptitle(PROTOCOL)
+
     fig, ax = plot_selectivity(\
-                            ['%s_%s_shRNA' % (PROTOCOL, quantity),
-                             '%s_%s_scramble' % (PROTOCOL, quantity)],
+                            ['shRNA_%s_%s' % (PROTOCOL, quantity),
+                             'scramble_%s_%s' % (PROTOCOL, quantity)],
                             #   average_by='ROIs',
                             #  using='fit',
                             path=folder)
-    
-    # fig, ax = plot_orientation_tuning_curve(\
-    #                         ['PV-cells_WT_Adult_V1_contrast-1.0', 
-    #                             'PV-cells_WT_Adult_V1_contrast-0.5'],
-    #                                         # average_by='ROIs',
-    #                         path=folder)
-# %%
+    fig.suptitle(PROTOCOL)
 
 # %%
-dataset
-# %%
+

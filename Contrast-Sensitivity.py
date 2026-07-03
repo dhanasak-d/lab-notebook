@@ -14,8 +14,7 @@ from physion.analysis.read_NWB import Data,\
 from physion.analysis.episodes.build import EpisodeData
 from physion.dataviz.episodes.trial_average import plot as plot_trial_average
 
-# TO CHANGE:
-PROTOCOL = 'tuning-high-contrast' # 'contrast-sensitivity'
+PROTOCOL = 'contrast-sensitivity'
 
 folder = os.path.join(os.path.expanduser('~'), 
                 'DATA', 'Taddy', 'PN_shGrid1-2026', 'NWBs')
@@ -144,17 +143,10 @@ def process_file(filename, i, c, quantity):
     nMIN_ROIs = 4
 
     # statistical test for visually-evoked-responses
-    if quantity=='Deconvolved':
-        stat_test_props=dict(interval_pre=[-1.,-0.0],
-                            interval_post=[0.0, 1.0],                                   
-                            test='ttest',                                            
-                            sign='positive')
-    else:
-        stat_test_props=dict(interval_pre=[-1.,0],
-                            interval_post=[1.,2.],                                   
-                            test='ttest',                                            
-                            sign='positive')
-
+    stat_test_props=dict(interval_pre=[-1.,-0.0],
+                        interval_post=[0.0, 1.0],                                   
+                        test='ttest',                                            
+                        sign='positive')
 
     response_significance_threshold=5e-2
 
