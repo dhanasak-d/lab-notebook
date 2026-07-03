@@ -264,19 +264,18 @@ for c in groups:
 # %%
 from physion.analysis.protocols.contrast_sensitivity\
         import plot_contrast_sensitivity, plot_contrast_responsiveness
+
+
 fig, ax = plot_contrast_sensitivity(\
-                         ['%s_scramble' % quantity],
-                        # ['%s_scramble' % quantity, 
-                        #  '%s_shRNA' % quantity],
+                        ['%s_scramble' % quantity, 
+                         '%s_shRNA' % quantity],
                           average_by='ROIs',
                         path=os.path.join(folder))
-# %%
-np.load(os.path.join(folder, 'Sensitivities_dFoF_scramble.npy'),
-        allow_pickle=True)[7]['Responses'].shape
-# %%
-for fn in dataset['files']:
-    data = Data(fn)
-    data.build_visual_stim()
-    print(len(data.visual_stim.experiment['time_start']))
+
+fig, ax = plot_contrast_sensitivity(\
+                        ['%s_scramble' % quantity, 
+                         '%s_shRNA' % quantity],
+                          average_by='sessions',
+                        path=os.path.join(folder))
 
 # %%
