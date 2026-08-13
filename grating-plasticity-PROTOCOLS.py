@@ -12,15 +12,19 @@ blocks of 100s for gratings drifting at 1cycle/s but refreshed only @ 2Hz
             --> we want more onsets
                 --> we replace blocks of 100s by 10 blocks of 10s
 """
-import os
-import itertools
+import os, subprocess
 
 Screen="Dell-2020"
 
 def build_movie(X, name='temp', rm=True):
+
   with open('%s.json' % name, 'w') as f:
     f.write(X)
-  os.system('cd physion/src; python -m physion.visual_stim.build ../../%s.json; cd ../..' % name)
+
+  p = subprocess.Popen('python -m physion.visual_stim.build ../../%s.json' % name,
+                   cwd=os.path.join('.', 'physion', 'src'))
+  p.wait()
+
   if rm:
     os.remove('%s.json' % name)
 
@@ -96,7 +100,7 @@ def MixedNovelFamiliar(NovelOrientation=135.,
   return mixed 
 
 
-if 1:
+if 0:
   # original Cooke et al.,
   build_movie(GratingPhaseReversing(Orientation=45.0, Screen=Screen, 
                                     flicker_freq=2., 
@@ -132,6 +136,7 @@ if 1:
                                  Duration=120., 
                                  interstim=30, jitter=3.), 
               name='Testing-Novel-Familiar-Grating-135deg-45deg-Kim2020')#, rm=False)
+if 1:
   # Kim et al., 2020 - shifted by 45deg.
   build_movie(GratingPhaseReversing(Orientation=0.0, Screen=Screen, 
                                     flicker_freq=0.5, 
