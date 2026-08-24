@@ -17,7 +17,7 @@ from physion.dataviz.episodes.trial_average import plot as plot_trial_average
 PROTOCOL = 'contrast-sensitivity'
 
 folder = os.path.join(os.path.expanduser('~'), 
-                'DATA', 'Taddy', 'PN_shGrid1-2026', 'NWBs')
+            'DATA', 'Taddy', 'PN_shGrid1-2026', 'NWBs', 'Orientation-Contrast')
 if not os.path.isdir(os.path.join(folder, 'temp')):
     os.mkdir(os.path.join(folder, 'temp'))
 
@@ -27,15 +27,14 @@ dataset = scan_folder_for_NWBfiles(
 
 # %%
 dFoF_parameters = dict(\
-    roi_to_neuropil_fluo_inclusion_factor=0., # no factor here
-    neuropil_correction_factor = 0.7,
+    roi_to_neuropil_fluo_inclusion_factor= 0.0, # no factor here
+    neuropil_correction_factor = 0.5,
     method_for_F0 = 'sliding_percentile',
     percentile=5., # percent
     sliding_window = 5*60, # seconds
 )
 
 quantity = 'dFoF'
-
 # %%
 
 def cell_sensitivity_example_fig(filename,
@@ -260,6 +259,9 @@ for c in groups:
         # # saving data
         np.save(os.path.join(folder, 'Sensitivities_%s_%s.npy' % (quantity, c)), 
                 Sensitivities)
+
+
+
 
 # %%
 from physion.analysis.protocols.contrast_sensitivity\
