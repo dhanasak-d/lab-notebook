@@ -59,7 +59,7 @@ def cell_sensitivity_example_fig(filename,
                            quantities=[quantity],
                            protocol_name=PROTOCOL,
                            verbose=False)
-
+    print(ep.varied_parameters)
     fig, AX = pt.plt.subplots(Nsamples, 
                               len(ep.varied_parameters['contrast']), 
                           figsize=(7,7))
@@ -125,9 +125,10 @@ def cell_sensitivity_example_fig(filename,
     return fig
 
 # iSession = 0 # session index
-fig = cell_sensitivity_example_fig(dataset['files'][0])
+fig = cell_sensitivity_example_fig(dataset['files'][-1])
 
-
+# %%
+data = Data(dataset['files'][-1])
 # %%
 
 from physion.analysis.protocols.contrast_sensitivity import\
