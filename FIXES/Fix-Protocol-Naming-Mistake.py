@@ -11,12 +11,12 @@ for f, _, fns in os.walk(folder):
             print('processing %s' % f)
             with open(os.path.join(f, fn), 'r') as r:
                 protocol = r.read()
-            print('BEFORE:')
-            print(protocol[:600])
-            print()
 
             if len(protocol.split("\"Protocol-2\": \"contrast-sensitivity.json\""))>0:
-                #print(protocol.split("\"Protocol-2\": \"contrast-sensitivity.json\"")[1])
+                print('BEFORE:')
+                print(protocol[:600])
+                print()
+
                 protocol = protocol.replace(
                     "\"Protocol-2\": \"contrast-sensitivity.json\"",
                     "\"Protocol-2\": \"tuning-low-contrast.json\""
