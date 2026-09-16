@@ -13,8 +13,6 @@ from physion.analysis.read_NWB import Data,\
     scan_folder_for_NWBfiles
 
 from physion.analysis.episodes.build import EpisodeData
-from physion.dataviz.episodes.trial_average\
-              import plot as plot_trial_average
 
 # %%
 folder = os.path.join(os.path.expanduser('~'), 
@@ -26,6 +24,11 @@ notebook_folder =\
 
 if not os.path.isdir(os.path.join(folder, 'temp')):
     os.mkdir(os.path.join(folder, 'temp'))
+
+# %%
+learningRESPS = np.load('learning-resps.npy', allow_pickle=True).item()
+
+
 
 # %%
 dataset = scan_folder_for_NWBfiles(\
@@ -43,221 +46,143 @@ dFoF_parameters = dict(\
     neuropil_correction_factor = 0.5,
     # with_computed_neuropil_fact=True, # no factor here
     method_for_F0 = 'sliding_percentile',
-    percentile=20., # percent
+    percentile=10., # percent
     sliding_window = 5*60, # seconds
 )
 
 quantities = ['dFoF']
 
-def analyze_subject(filenames,
+def analyze_subject(filename,
                     subject,
-                    resp_window=[-2,8],
+                    resp_window=[-2,5],
                     shift=.5):
 
-    fig, AX = pt.figure(axes=(2,1), 
-                        wspace=0.3, left=2.,
-                        ax_scale=(1.3,3.))
+    fig, ax = pt.figure(wspace=0.3, left=2., right=2.,
+                        ax_scale=(1.8,1.5))
 
-    resp = []
-    for day, filename in enumerate(filenames):
+    data = Data(filename)
+    data.build_dFoF(**dFoF_parameters, verbose=True)
 
-        color = pt.copper(1-day/len(filenames))
-        data = Data(filename)
-        data.build_dFoF(**dFoF_parameters, verbose=True)
-        print(' * -- ', filename)
+    resp = {}
+    for i, key, name, color in zip(range(2),\
+        ['familiar', 'novel'], 
+        ['protocol-1', 'protocol-2'], ['k', 'C2']):
         ep = EpisodeData(data, 
                         quantities=quantities,
-                        protocol_id=0)
-
-
+                        protocol_name=name)
         baseline = ep.dFoF[:,:,ep.t<0].mean()
-        cond = (ep.t>-3) & (ep.t<10)
-        AX[0].plot(ep.t[cond], 
-            -shift*day-baseline+\
-                ep.dFoF.mean(axis=(0,1))[cond],
-                color=color)
-        cond = (ep.t>90) & (ep.t<103)
-        AX[1].plot(ep.t[cond], 
-            -shift*day-baseline+\
-                ep.dFoF.mean(axis=(0,1))[cond],
-            color=color)
-        AX[0].annotate('day %i (n=%i ROIs) ' % (day+1, data.nROIs),
-                    (-3, -shift*day), ha='right',
-                    xycoords='data', color=color)
-        AX[0].annotate('\n'+os.path.basename(filename).replace('.nwb', '')+10*' ',
-                    (-3, -shift*day), ha='right',
-                    xycoords='data', color=color,
-                    fontsize=4, va='top')
+        ax.plot(ep.t, -baseline+ep.dFoF.mean(axis=(0,1)), color=color)
+        pt.annotate(ax, 'n=%i ROIs ' % data.nROIs, (0, 0.3), ha='right')
+        pt.annotate(ax, os.path.basename(filename).replace('.nwb', ''),
+                    (0,0), ha='right', fontsize=5)
+        pt.annotate(ax, key+i*'\n', (1, 0.4), color=color)
 
-        resp_cond = (ep.t>resp_window[0]) &\
-                        (ep.t<resp_window[1])
-        resp.append(\
-            ep.dFoF[:,:,(ep.t>resp_window[0]) &\
-                (ep.t<resp_window[1])].mean(axis=1))
+        resp[key] = ep.dFoF.mean(axis=1) # average over ROIs
 
-    pt.set_common_ylims(AX)
-    pt.draw_bar_scales(AX[1], Ybar=0.4, Ybar_label='0.4$\\Delta$F/F', Xbar=1e-3)
-    for ax in AX:
-        pt.set_plot(ax, ['bottom'])
-    AX[0].set_xlabel(50*' '+' time (s)     --       stim in [0,100]s')
-    AX[0].set_title(subject)
+    pt.draw_bar_scales(ax, Ybar=0.1, Ybar_label='0.1$\\Delta$F/F ', 
+                       Xbar=1e-3)
+    ylim = ax.get_ylim()
+    ax.fill_between([0, ep.time_duration[0]], ylim[0], ylim[1], color='k', alpha=.1, lw=0)
+    ax.set_ylim(ylim)
+    pt.set_plot(ax, ['bottom'])
+    ax.set_xlabel(' time (s) ')
+    ax.set_title(subject)
 
-    return ep.t[resp_cond], resp, fig
+    return ep.t, resp, fig
 
-RESPS = {'Grid1':[], 'Scramble':[]}
+RESPS = {'Grid1':{'familiar':[], 'novel':[]},
+         'Scramble':{'familiar':[], 'novel':[]}}
 for s, subject in enumerate(\
                 np.unique(dataset['subjects'])):
 
     subject_files = dataset['files'][subject==dataset['subjects']]
-    rec_dates = dataset['dates'][subject==dataset['subjects']]
+
     virus=\
          dataset['viruses'][subject==dataset['subjects']][0].replace('CamKII-Cre+sh', '')
 
-    t, resp, fig = analyze_subject(subject_files[np.argsort(rec_dates)], 
+    t, resp, fig = analyze_subject(subject_files[0],
                     '%s -- %s ' % (subject, virus))
-    # pt.save(fig, 'Desktop/plasticity', '%s.png' % (s+1),
-    #         transparent=False)
-    RESPS[virus].append(resp)
+    fig_name = 'markBear-plasticity-Test-trial-average-%s.svg' % subject
+    pt.save(fig, notebook_folder, fig_name)
+    for key in ['familiar', 'novel']:
+        RESPS[virus][key].append(resp[key])
 
+for virus in RESPS:
+    for key in ['familiar', 'novel']:
+        RESPS[virus][key] = np.array(RESPS[virus][key])
 RESPS['t'] = t
-for v, virus in enumerate(RESPS):
-    RESPS[virus] = np.array(RESPS[virus])
+
+# %%
+# -- print for markdown notebook
+for s, subject in enumerate(\
+                np.unique(dataset['subjects'])):
+    fig_name = 'markBear-plasticity-Test-trial-average-%s.svg' % subject
+    print('![](figs/%s)     ' % fig_name) # for notebook !
 
 # %%
 from scipy import stats
-fig, ax = pt.figure(left=1.1, ax_scale=(1.5,1.5))
+fig, ax = pt.figure(left=1.1, ax_scale=(2,2), right=2.)
+# fig2, ax2 = pt.figure(left=1.1, ax_scale=(1.5,1.5))
 
 pre_window = [-2, 0]
 post_window= [0, 4]
 
 for v, virus in enumerate(['Grid1', 'Scramble']):
-    if len(RESPS[virus])>0:
-        # RESPS[virus].shape = (subject, days, repeats, time)
+    points = np.zeros((RESPS[virus]['familiar'].shape[0],2))
+    for i, key, color in zip(range(2), ['familiar', 'novel'], ['grey', 'C2']):
         pre_cond = (RESPS['t']>pre_window[0]) & (RESPS['t']<pre_window[1])
-        baseline = RESPS[virus][:,:,:,pre_cond].mean(axis=-1)
+        baseline = np.mean(RESPS[virus][key][:,:,pre_cond], axis=(1,2))
         post_cond = (RESPS['t']>post_window[0]) & (RESPS['t']<post_window[1])
-        resp = (RESPS[virus][:,:,:,post_cond].T-baseline.T).T
+        resp = ((RESPS[virus][key][:,:,post_cond].mean(axis=(1,2))).T-baseline.T).T
         # average responses
-        for i in range(resp.shape[1]):
-            ax.bar([i+v*(1+resp.shape[1])], 
-                [resp[:,i,:].mean()],
-                yerr=[stats.sem(resp[:,i,:].mean(axis=(1,2)))],
-                color = pt.copper(1-i/resp.shape[1]))
-        # individual responses
-        for j in range(resp.shape[0]):
-            ax.plot(v*(1+resp.shape[1])+\
-                    np.arange(resp.shape[1]),
-                    resp[j,:,:,:].mean(axis=(1,2)), 
-                    'k-', lw=0.2)
-        
+        ax.bar([i+3*v], [resp.mean()], yerr=[stats.sem(resp)], color = color)
+        points[:,i] = resp
+    # individual responses
+    ax.plot(np.arange(2)*0.8+0.1+3*v, points.T, 'ko-', ms=1, lw=0.4)
+    # now relative plot
+    # ax2.bar([v], [np.mean((points[:,1]-points[:,0])/points[:,1])*100.], 
+    #        yerr=[stats.sem(resp)], color = 'tab:blue')
+
+for i, key, color in zip(range(2), ['familiar', 'novel'], ['grey', 'C2']):
+    pt.annotate(ax, key+i*'\n', (1,0), color=color)
 pt.set_plot(ax, 
-            xticks=[1, 9],
+            xticks=[0.5, 3.5],
             xticks_labels=\
-            ['%s\n(N=%i)' % (key, len(RESPS[key])) for key in ['Grid1', 'Scramble']],
+            ['%s\n(N=%i)' % (key, RESPS[key]['familiar'].shape[0]) for key in ['Grid1', 'Scramble']],
             ylabel='$\\delta$ $\\Delta$F/F')
 pt.save(fig, notebook_folder, 
-        'markBear-plasticity-Learning-summary.svg',
+        'markBear-plasticity-Test-summary.svg',
         transparent=True)
 
 # %%
-from scipy import stats
-from scipy.ndimage import gaussian_filter1d
 
-pre_window = [-2, 0]
-post_window= [0, 8]
-
-shift, tshift = 0.6, 12
-smoothing = 5
 for v, virus in enumerate(['Grid1', 'Scramble']):
-    if len(RESPS[virus])>0:
-        # RESPS[virus].shape = (subject, days, repeats, time)
-        pre_cond = (RESPS['t']>pre_window[0]) & (RESPS['t']<pre_window[1])
-        baseline = RESPS[virus][:,:,:,pre_cond].mean(axis=-1)
-        post_cond = (RESPS['t']>post_window[0]) & (RESPS['t']<post_window[1])
-        resp = (RESPS[virus][:,:,:,:].T-baseline.T).T
 
-        for rec in range(resp.shape[0]):
+    fig, AX = pt.figure(axes=(10,RESPS[virus]['familiar'].shape[0]),
+                        ax_scale=(0.8,0.9),
+                        wspace=0.2, hspace=0.4, left=2., right=2.)
+    fig.suptitle(virus, fontsize=10)
+    for n in range(RESPS[virus]['familiar'].shape[0]):
 
-            fig, ax = pt.figure(ax_scale=(2,3), left=0.5, bottom=0.5)
-            ax.set_title('%s - mouse %i' % (virus, rec+1))
-            ax.axis('off')
-            for day in range(resp.shape[1]):
-                for repeat in range(resp.shape[2]):
+        for i, key, color in zip(range(2),\
+                    ['familiar', 'novel'], ['k', 'C2']):
 
-                    ax.plot(RESPS['t']+repeat*tshift, 
-                        -shift*day+\
-                            gaussian_filter1d(resp[rec, day, repeat, :], smoothing),
-                        color = pt.copper(1-day/resp.shape[1]))
+            for k in range(10):
+                AX[n][k].plot(RESPS['t'], 
+                              RESPS[virus][key][n, 10*k:10*k+10, :].mean(axis=0),
+                              color=color)
+                AX[n][k].axis('off')
 
-                    if repeat==0:
-                        ax.annotate('day %i ' % (day+1),
-                                    (-3, -shift*day), ha='right',
-                                    xycoords='data', 
-                                    color = pt.copper(1-day/resp.shape[1]))
-                    if day==0:
-                        ax.annotate('#%i' % (repeat+1),
-                                    (tshift*repeat, -shift*(resp.shape[1]-.5)), 
-                                    va='top', ha='center', xycoords='data')
-
-            pt.draw_bar_scales(ax, 
-                               loc='top-right',
-                    Ybar=0.4, Ybar_label='0.4$\\Delta$F/F', 
-                    Xbar=4, Xbar_label='4s', color='k')
-
-            fig_name = 'bear-plasticity-learning-%s-mouse%i.svg' % (virus, rec+1)
-            print('![](figs/%s)' % fig_name) # for notebook !
-            pt.save(fig, notebook_folder, fig_name)
-                    
-        
-# pt.save(fig, 'Desktop/plasticity', '.png',
-#         transparent=False)
+            pt.annotate(AX[n][0], 'mouse %i' % (n+1), (0,0.5),
+                        ha='right', va='top')
+        pt.draw_bar_scales(AX[n][0], Ybar=0.4, Ybar_label='0.4$\\Delta$F/F', Xbar=1, Xbar_label='1s')
+        pt.set_common_ylims(AX[n])
+        for k in range(10):
+            pt.annotate(AX[0][k], '%i-%i' % (10*k,10*(k+1)-1), (1,1),
+                        fontsize=5, ha='right', va='top')
+    fig_name = 'markBear-plasticity-Test-trial-dynamics-%s.svg' % virus
+    pt.save(fig, notebook_folder, fig_name,
+            transparent=True)
+    print('![](figs/%s)     ' % fig_name) # for notebook !
 
 # %%
-
-pre_window = [-2, 0]
-post_window= [0, 8]
-
-shift, tshift = 0.6, 12
-smoothing = 50
-for v, virus in enumerate(['Grid1', 'Scramble']):
-    if len(RESPS[virus])>0:
-        # RESPS[virus].shape = (subject, days, repeats, time)
-        pre_cond = (RESPS['t']>pre_window[0]) & (RESPS['t']<pre_window[1])
-        baseline = RESPS[virus][:,:,:,pre_cond].mean(axis=-1)
-        post_cond = (RESPS['t']>post_window[0]) & (RESPS['t']<post_window[1])
-        resp = gaussian_filter1d(\
-            (RESPS[virus][:,:,:,:].T-baseline.T).T,
-            smoothing)
-
-        fig, ax = pt.figure(ax_scale=(2,3), left=1.1)
-        ax.set_title('%s (N=%i mice)' % (virus, resp.shape[0]))
-        ax.axis('off')
-        for day in range(resp.shape[1]):
-            for repeat in range(resp.shape[2]):
-
-                pt.plot(RESPS['t']+repeat*tshift, 
-                    -shift*day+\
-                        resp[:, day, repeat, :].mean(axis=0),
-                    sy=stats.sem(resp[:, day, repeat, :], axis=0),
-                    color = pt.copper(1-day/resp.shape[1]),
-                    ax=ax)
-
-                if repeat==0:
-                    ax.annotate('day %i ' % (day+1),
-                                (-3, -shift*day), ha='right',
-                                xycoords='data', 
-                                color = pt.copper(1-day/resp.shape[1]))
-                if day==0:
-                    ax.annotate('#%i' % (repeat+1),
-                                (tshift*repeat, -shift*(resp.shape[1]-.5)), 
-                                va='top', ha='center', xycoords='data')
-
-        pt.draw_bar_scales(ax, 
-                            loc='top-right',
-                Ybar=0.5, Ybar_label='0.5$\Delta$F/F', 
-                Xbar=10, Xbar_label='10s', color='k')
-        
-
-# %%
-
-

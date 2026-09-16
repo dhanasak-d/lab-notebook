@@ -13,8 +13,6 @@ from physion.analysis.read_NWB import Data,\
     scan_folder_for_NWBfiles
 
 from physion.analysis.episodes.build import EpisodeData
-from physion.dataviz.episodes.trial_average\
-              import plot as plot_trial_average
 
 # %%
 folder = os.path.join(os.path.expanduser('~'), 
@@ -56,6 +54,7 @@ def analyze_subject(filenames,
 
     fig, AX = pt.figure(axes=(2,1), 
                         wspace=0.3, left=2.,
+                        bottom=.3, top=.6,
                         ax_scale=(1.3,3.))
 
     resp = []
@@ -115,17 +114,25 @@ for s, subject in enumerate(\
 
     t, resp, fig = analyze_subject(subject_files[np.argsort(rec_dates)], 
                     '%s -- %s ' % (subject, virus))
-    # pt.save(fig, 'Desktop/plasticity', '%s.png' % (s+1),
-    #         transparent=False)
+    fig_name = 'markBear-plasticity-Learning-trial-average-%s.svg' % subject
+    pt.save(fig, notebook_folder, fig_name)
     RESPS[virus].append(resp)
+
 
 RESPS['t'] = t
 for v, virus in enumerate(RESPS):
     RESPS[virus] = np.array(RESPS[virus])
 
 # %%
+# -- print for markdown notebook
+for s, subject in enumerate(\
+                np.unique(dataset['subjects'])):
+    fig_name = 'markBear-plasticity-Learning-trial-average-%s.svg' % subject
+    print('![](figs/%s)' % fig_name) # for notebook !
+
+# %%
 from scipy import stats
-fig, ax = pt.figure(left=1.1, ax_scale=(1.5,1.5))
+fig, ax = pt.figure(left=1.1, ax_scale=(1.5,1.5), right=2.)
 
 pre_window = [-2, 0]
 post_window= [0, 4]
@@ -150,6 +157,10 @@ for v, virus in enumerate(['Grid1', 'Scramble']):
                     resp[j,:,:,:].mean(axis=(1,2)), 
                     'k-', lw=0.2)
         
+for i in range(RESPS['Grid1'].shape[1]):
+    pt.annotate(ax, i*'\n' + 'day %i' % (i+1), (1,1),
+                va='top',
+                color = pt.copper(1-i/resp.shape[1]))
 pt.set_plot(ax, 
             xticks=[1, 9],
             xticks_labels=\
@@ -178,7 +189,8 @@ for v, virus in enumerate(['Grid1', 'Scramble']):
 
         for rec in range(resp.shape[0]):
 
-            fig, ax = pt.figure(ax_scale=(2,3), left=0.5, bottom=0.5)
+            fig, ax = pt.figure(ax_scale=(2,3), 
+                                left=0.5, top=.6, bottom=0.3)
             ax.set_title('%s - mouse %i' % (virus, rec+1))
             ax.axis('off')
             for day in range(resp.shape[1]):
@@ -229,7 +241,8 @@ for v, virus in enumerate(['Grid1', 'Scramble']):
             (RESPS[virus][:,:,:,:].T-baseline.T).T,
             smoothing)
 
-        fig, ax = pt.figure(ax_scale=(2,3), left=1.1)
+        fig, ax = pt.figure(ax_scale=(2,3), 
+                            bottom=.2, left=.6, top=.5, right=.5)
         ax.set_title('%s (N=%i mice)' % (virus, resp.shape[0]))
         ax.axis('off')
         for day in range(resp.shape[1]):
@@ -257,7 +270,16 @@ for v, virus in enumerate(['Grid1', 'Scramble']):
                 Ybar=0.5, Ybar_label='0.5$\Delta$F/F', 
                 Xbar=10, Xbar_label='10s', color='k')
         
+    fig_name = 'bear-plasticity-learning-mice-average-%s.svg' % (virus)
+    print('![](figs/%s)' % fig_name) # for notebook !
+    pt.save(fig, notebook_folder, fig_name)
 
 # %%
+if 1:
+    np.save('learning-resps.npy', RESPS)
 
+# %%
+RESPS = np.load('learning-resps.npy', allow_pickle=True).item()
+# learningRESPS = np.load('learning-resps.npy', allow_pickle=True).item()
 
+# %%
