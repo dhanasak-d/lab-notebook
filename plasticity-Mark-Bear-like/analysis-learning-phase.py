@@ -6,7 +6,7 @@
 import sys, pathlib, os
 import numpy as np
 
-sys.path += ['physion/src'] # add src code directory for physion
+sys.path += ['../physion/src'] # add src code directory for physion
 from physion.utils import plot_tools as pt
 
 from physion.analysis.read_NWB import Data,\
@@ -31,7 +31,7 @@ if not os.path.isdir(os.path.join(folder, 'temp')):
 dataset = scan_folder_for_NWBfiles(\
         os.path.join(os.path.expanduser('~'), 
             'DATA', 'Taddy', 'PN_shGrid1-2026'),
-            # for_protocols=['Learning-Familiar-Grating-45deg'],
+            for_protocol='Learning-Familiar-Grating-45deg',
             )
 
 quantity = 'dFoF'
@@ -41,7 +41,7 @@ quantity = 'dFoF'
 dFoF_parameters = dict(\
     roi_to_neuropil_fluo_inclusion_factor=0., # no factor here
     neuropil_correction_factor = 0.5,
-    # with_computed_neuropil_fact=True, # no factor here
+    # with_computed_neuropil_fact=True, 
     method_for_F0 = 'sliding_percentile',
     percentile=20., # percent
     sliding_window = 5*60, # seconds

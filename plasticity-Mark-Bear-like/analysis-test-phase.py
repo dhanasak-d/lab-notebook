@@ -6,7 +6,7 @@
 import sys, pathlib, os
 import numpy as np
 
-sys.path += ['physion/src'] # add src code directory for physion
+sys.path += ['../physion/src'] # add src code directory for physion
 from physion.utils import plot_tools as pt
 
 from physion.analysis.read_NWB import Data,\
@@ -31,7 +31,7 @@ if not os.path.isdir(os.path.join(folder, 'temp')):
 dataset = scan_folder_for_NWBfiles(\
         os.path.join(os.path.expanduser('~'), 
             'DATA', 'Taddy', 'PN_shGrid1-2026'),
-            # for_protocols=['Learning-Familiar-Grating-45deg'],
+            for_protocol='Testing-Novel-Familiar-Grating',
             )
 
 quantity = 'dFoF'
