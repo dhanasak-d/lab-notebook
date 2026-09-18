@@ -35,6 +35,7 @@ dFoF_parameters = dict(\
 )
 
 quantity = 'dFoF'
+
 # %%
 
 def cell_sensitivity_example_fig(filename,
@@ -264,7 +265,11 @@ for c in groups:
 
 
 
-# %%
+# %%A
+notebook_folder =\
+    os.path.join(os.path.expanduser('~'), 
+        'Documents', 'Notebook', 'Projects', 'Taddy-GluN3', 'figs')
+
 from physion.analysis.protocols.contrast_sensitivity\
         import plot_contrast_sensitivity, plot_contrast_responsiveness
 
@@ -275,10 +280,15 @@ fig, ax = plot_contrast_sensitivity(\
                           average_by='ROIs',
                         path=os.path.join(folder))
 
+fig_name = 'contrast-sensitivity-per-ROIs.svg'
+pt.save(fig, notebook_folder, fig_name)
+
 fig, ax = plot_contrast_sensitivity(\
                         ['%s_scramble' % quantity, 
                          '%s_shRNA' % quantity],
                           average_by='sessions',
                         path=os.path.join(folder))
+fig_name = 'contrast-sensitivity-per-session.svg'
+pt.save(fig, notebook_folder, fig_name)
 
 # %%

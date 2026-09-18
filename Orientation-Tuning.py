@@ -89,7 +89,7 @@ def process_file(filename, i, c, PROTOCOL, quantity):
                                                         response_significance_threshold =\
                                                             response_significance_threshold, 
                                                         contrast = Episodes.contrast[0],
-                                                        verbose=True)
+                                                        verbose=False)
             Tuning['datafile'] = filename
             Tuning['nROIs_original'] = data.original_nROIs
             Tuning['nROIs_final'] = data.nROIs
@@ -198,8 +198,13 @@ for g in groups:
 # shutil.rmtree(os.path.join(folder, 'temp'))
 
 # %%
+quantity = 'dFoF'
 from physion.analysis.protocols.orientation_tuning\
     import plot_orientation_tuning_curve, plot_selectivity
+
+notebook_folder =\
+    os.path.join(os.path.expanduser('~'), 
+        'Documents', 'Notebook', 'Projects', 'Taddy-GluN3', 'figs')
 
 for PROTOCOL in PROTOCOLS:
     
@@ -209,6 +214,9 @@ for PROTOCOL in PROTOCOLS:
                             average_by='sessions',
                             path=folder)
     fig.suptitle(PROTOCOL)
+    fig_name = 'orientation-tuning-per-session-%s.svg' % PROTOCOL
+    pt.save(fig, notebook_folder, fig_name)
+    print('![](figs/%s)     ' % fig_name) # for notebook !
 
     fig, ax = plot_orientation_tuning_curve(\
                             ['shRNA_%s_%s' % (PROTOCOL, quantity),
@@ -216,6 +224,9 @@ for PROTOCOL in PROTOCOLS:
                             average_by='ROIs',
                             path=folder)
     fig.suptitle(PROTOCOL)
+    fig_name = 'orientation-tuning-per-ROIs-%s.svg' % PROTOCOL
+    pt.save(fig, notebook_folder, fig_name)
+    print('![](figs/%s)     ' % fig_name) # for notebook !
 
     fig, ax = plot_selectivity(\
                             ['shRNA_%s_%s' % (PROTOCOL, quantity),
@@ -224,6 +235,9 @@ for PROTOCOL in PROTOCOLS:
                             #  using='fit',
                             path=folder)
     fig.suptitle(PROTOCOL)
+    fig_name = 'orientation-selectivity-%s.svg' % PROTOCOL
+    pt.save(fig, notebook_folder, fig_name)
+    print('![](figs/%s)     ' % fig_name) # for notebook !
 
 # %%
 

@@ -14,13 +14,15 @@ from physion.analysis.read_NWB import Data,\
 
 from physion.analysis.episodes.build import EpisodeData
 
+pt.set_style('dark')
+
 # %%
 folder = os.path.join(os.path.expanduser('~'), 
                 'DATA', 'Taddy', 'PN_shGrid1-2026', 'NWBs')
 
 notebook_folder =\
     os.path.join(os.path.expanduser('~'), 
-        'Documents', 'Notebook', 'Projects', 'Taddy-GluN3', 'figs')
+        'OneDrive - ICM', 'Notebook', 'Projects', 'Taddy-GluN3', 'figs')
 
 if not os.path.isdir(os.path.join(folder, 'temp')):
     os.mkdir(os.path.join(folder, 'temp'))
@@ -60,7 +62,7 @@ def analyze_subject(filenames,
     resp = []
     for day, filename in enumerate(filenames):
 
-        color = pt.copper(1-day/len(filenames))
+        color = pt.copper(.3+.7*day/len(filenames))
         data = Data(filename)
         data.build_dFoF(**dFoF_parameters, verbose=True)
         print(' * -- ', filename)
@@ -115,6 +117,7 @@ for s, subject in enumerate(\
     t, resp, fig = analyze_subject(subject_files[np.argsort(rec_dates)], 
                     '%s -- %s ' % (subject, virus))
     fig_name = 'markBear-plasticity-Learning-trial-average-%s.svg' % subject
+    pt.timestamp(fig)
     pt.save(fig, notebook_folder, fig_name)
     RESPS[virus].append(resp)
 
