@@ -1,7 +1,6 @@
 # %% [markdown]
 # # Orientation Tuning
 
-
 # %%
 # general python modules for scientific analysis
 import sys, pathlib, os
@@ -17,7 +16,18 @@ from physion.analysis.episodes.build import EpisodeData
 from physion.dataviz.episodes.trial_average\
               import plot as plot_trial_average
 
+pt.set_style('dark')
+
 # %%
+folder = os.path.join(os.path.expanduser('~'), 
+                'DATA', 'Taddy', 'PN_shGrid1-2026', 'NWBs')
+
+notebook_folder =\
+    os.path.join(os.path.expanduser('~'), 
+        'OneDrive - ICM', 'Lab-Notebook', 'Projects', 'Taddy-GluN3', 'figs')
+
+if not os.path.isdir(os.path.join(folder, 'temp')):
+    os.mkdir(os.path.join(folder, 'temp'))
 
 # %%
 PROTOCOLS = [\
@@ -40,9 +50,29 @@ dataset = scan_folder_for_NWBfiles(\
 quantity = 'dFoF'
 
 # %%
+for v, virus in enumerate(\
+        np.unique(dataset['viruses'])):
+
+    print(' - %s:' % virus)
+    virus_cond = (virus==dataset['viruses'])
+
+    for s, subject in enumerate(\
+        np.unique(dataset['subjects'][virus_cond])):
+
+        subject_cond = dataset['subjects'][virus_cond]==subject
+
+        subject_files = [os.path.basename(f) for f in \
+            dataset['files'][virus_cond][subject_cond]]
+
+        print('     - %s:' % subject)
+        for s in subject_files:
+            print('         - [%s](../../Data/%s.md)' %\
+                (s.replace('.nwb',''), s.replace('.nwb','')))
+    print('\n')
+# %%
 dFoF_parameters = dict(\
     roi_to_neuropil_fluo_inclusion_factor= 0.0, # no factor here
-    neuropil_correction_factor = 0.5,
+    neuropil_correction_factor = 0.7,
     method_for_F0 = 'sliding_percentile',
     percentile=5., # percent
     sliding_window = 5*60, # seconds
@@ -201,10 +231,6 @@ for g in groups:
 quantity = 'dFoF'
 from physion.analysis.protocols.orientation_tuning\
     import plot_orientation_tuning_curve, plot_selectivity
-
-notebook_folder =\
-    os.path.join(os.path.expanduser('~'), 
-        'Documents', 'Notebook', 'Projects', 'Taddy-GluN3', 'figs')
 
 for PROTOCOL in PROTOCOLS:
     

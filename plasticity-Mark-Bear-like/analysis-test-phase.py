@@ -20,14 +20,14 @@ folder = os.path.join(os.path.expanduser('~'),
 
 notebook_folder =\
     os.path.join(os.path.expanduser('~'), 
-        'Documents', 'Notebook', 'Projects', 'Taddy-GluN3', 'figs')
+        'OneDrive - ICM', 'Lab-Notebook', 'Projects', 'Taddy-GluN3', 'figs')
 
 if not os.path.isdir(os.path.join(folder, 'temp')):
     os.mkdir(os.path.join(folder, 'temp'))
 
+pt.set_style('dark')
 # %%
 learningRESPS = np.load('learning-resps.npy', allow_pickle=True).item()
-
 
 
 # %%
@@ -39,6 +39,21 @@ dataset = scan_folder_for_NWBfiles(\
 
 quantity = 'dFoF'
 
+# %%
+# %%
+for s, subject in enumerate(\
+                np.unique(dataset['subjects'])):
+
+    subject_files = [os.path.basename(f) for f in \
+        dataset['files'][subject==dataset['subjects']]]
+    virus = dataset['viruses'][subject==dataset['subjects']][0].split('+')[1]
+    print(' - %s (%s) :' % (subject, virus))
+    for s in subject_files:
+        print('     - [%s](../../Data/%s.md)' %\
+              (s.replace('.nwb',''), s.replace('.nwb','')))
+    print('\n')
+
+ 
 # %%
 
 dFoF_parameters = dict(\
@@ -66,7 +81,7 @@ def analyze_subject(filename,
     resp = {}
     for i, key, name, color in zip(range(2),\
         ['familiar', 'novel'], 
-        ['protocol-1', 'protocol-2'], ['k', 'C2']):
+        ['protocol-1', 'protocol-2'], ['w', 'C2']):
         ep = EpisodeData(data, 
                         quantities=quantities,
                         protocol_name=name)
@@ -82,7 +97,7 @@ def analyze_subject(filename,
     pt.draw_bar_scales(ax, Ybar=0.1, Ybar_label='0.1$\\Delta$F/F ', 
                        Xbar=1e-3)
     ylim = ax.get_ylim()
-    ax.fill_between([0, ep.time_duration[0]], ylim[0], ylim[1], color='k', alpha=.1, lw=0)
+    ax.fill_between([0, ep.time_duration[0]], ylim[0], ylim[1], color='w', alpha=.1, lw=0)
     ax.set_ylim(ylim)
     pt.set_plot(ax, ['bottom'])
     ax.set_xlabel(' time (s) ')
@@ -138,7 +153,7 @@ for v, virus in enumerate(['Grid1', 'Scramble']):
         ax.bar([i+3*v], [resp.mean()], yerr=[stats.sem(resp)], color = color)
         points[:,i] = resp
     # individual responses
-    ax.plot(np.arange(2)*0.8+0.1+3*v, points.T, 'ko-', ms=1, lw=0.4)
+    ax.plot(np.arange(2)*0.8+0.1+3*v, points.T, 'wo-', ms=1, lw=0.4)
     # now relative plot
     # ax2.bar([v], [np.mean((points[:,1]-points[:,0])/points[:,1])*100.], 
     #        yerr=[stats.sem(resp)], color = 'tab:blue')
@@ -165,7 +180,7 @@ for v, virus in enumerate(['Grid1', 'Scramble']):
     for n in range(RESPS[virus]['familiar'].shape[0]):
 
         for i, key, color in zip(range(2),\
-                    ['familiar', 'novel'], ['k', 'C2']):
+                    ['familiar', 'novel'], ['w', 'C2']):
 
             for k in range(10):
                 AX[n][k].plot(RESPS['t'], 

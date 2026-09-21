@@ -14,16 +14,48 @@ from physion.analysis.read_NWB import Data,\
 from physion.analysis.episodes.build import EpisodeData
 from physion.dataviz.episodes.trial_average import plot as plot_trial_average
 
-PROTOCOL = 'contrast-sensitivity'
+pt.set_style('dark')
 
+# %%
 folder = os.path.join(os.path.expanduser('~'), 
-            'DATA', 'Taddy', 'PN_shGrid1-2026', 'NWBs', 'Orientation-Contrast')
+                'DATA', 'Taddy', 'PN_shGrid1-2026', 'NWBs')
+
+notebook_folder =\
+    os.path.join(os.path.expanduser('~'), 
+        'OneDrive - ICM', 'Lab-Notebook', 'Projects', 'Taddy-GluN3', 'figs')
+
 if not os.path.isdir(os.path.join(folder, 'temp')):
     os.mkdir(os.path.join(folder, 'temp'))
 
 # %%
-dataset = scan_folder_for_NWBfiles(
-        folder, for_protocols=[PROTOCOL])
+dataset = scan_folder_for_NWBfiles(\
+        os.path.join(os.path.expanduser('~'), 
+            'DATA', 'Taddy', 'PN_shGrid1-2026'),
+            for_protocols=['contrast-sensitivity'],
+            )
+
+# %%
+
+for v, virus in enumerate(\
+        np.unique(dataset['viruses'])):
+
+    print(' - %s:' % virus)
+    virus_cond = (virus==dataset['viruses'])
+
+    for s, subject in enumerate(\
+        np.unique(dataset['subjects'][virus_cond])):
+
+        subject_cond = dataset['subjects'][virus_cond]==subject
+
+        subject_files = [os.path.basename(f) for f in \
+            dataset['files'][virus_cond][subject_cond]]
+
+        print('     - %s:' % subject)
+        for s in subject_files:
+            print('         - [%s](../../Data/%s.md)' %\
+                (s.replace('.nwb',''), s.replace('.nwb','')))
+    print('\n')
+
 
 # %%
 dFoF_parameters = dict(\
@@ -46,7 +78,7 @@ def cell_sensitivity_example_fig(filename,
                                                        sign='positive'),
                                 response_significance_threshold = 0.01,
                                 Nsamples = 10, # how many cells we show
-                                 color='k',
+                                color='w',
                                 seed=10):
     
     np.random.seed(seed)
@@ -58,7 +90,7 @@ def cell_sensitivity_example_fig(filename,
 
     ep = EpisodeData(data,
                            quantities=[quantity],
-                           protocol_name=PROTOCOL,
+                           protocol_name='contrast-sensitivity',
                            verbose=False)
     print(ep.varied_parameters)
     fig, AX = pt.plt.subplots(Nsamples, 
@@ -153,7 +185,7 @@ def process_file(filename, i, c, quantity):
 
     print('%i) ' % (i+1), 'analyzing file: %s  [...] ' % filename)
     data = Data(filename, verbose=False)
-    protocol_name=[p for p in data.protocols if PROTOCOL in p][0]
+    protocol_name=[p for p in data.protocols if 'contrast-sensitivity' in p][0]
     data.build_dFoF(**dFoF_parameters, verbose=False)
 
     if data.nROIs>=nMIN_ROIs:
@@ -206,7 +238,7 @@ for c in groups:
 
     # FILTER
     # 1) protocol type: contrast sensitivity
-    cond = np.array([np.sum([PROTOCOL in p for p in protocols])\
+    cond = np.array([np.sum(['contrast-sensitivity' in p for p in protocols])\
                     for protocols in dataset['protocols']], dtype=bool)
     # 2) virus
     cond = cond & (dataset['viruses']==groups[c]['virus'])
@@ -266,13 +298,8 @@ for c in groups:
 
 
 # %%A
-notebook_folder =\
-    os.path.join(os.path.expanduser('~'), 
-        'Documents', 'Notebook', 'Projects', 'Taddy-GluN3', 'figs')
-
 from physion.analysis.protocols.contrast_sensitivity\
         import plot_contrast_sensitivity, plot_contrast_responsiveness
-
 
 fig, ax = plot_contrast_sensitivity(\
                         ['%s_scramble' % quantity, 

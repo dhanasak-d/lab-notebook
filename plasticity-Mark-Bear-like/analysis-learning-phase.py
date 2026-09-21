@@ -22,7 +22,7 @@ folder = os.path.join(os.path.expanduser('~'),
 
 notebook_folder =\
     os.path.join(os.path.expanduser('~'), 
-        'OneDrive - ICM', 'Notebook', 'Projects', 'Taddy-GluN3', 'figs')
+        'OneDrive - ICM', 'Lab-Notebook', 'Projects', 'Taddy-GluN3', 'figs')
 
 if not os.path.isdir(os.path.join(folder, 'temp')):
     os.mkdir(os.path.join(folder, 'temp'))
@@ -62,7 +62,7 @@ def analyze_subject(filenames,
     resp = []
     for day, filename in enumerate(filenames):
 
-        color = pt.copper(.3+.7*day/len(filenames))
+        color = pt.spring(.2+.8*day/len(filenames))
         data = Data(filename)
         data.build_dFoF(**dFoF_parameters, verbose=True)
         print(' * -- ', filename)
@@ -132,7 +132,21 @@ for s, subject in enumerate(\
                 np.unique(dataset['subjects'])):
     fig_name = 'markBear-plasticity-Learning-trial-average-%s.svg' % subject
     print('![](figs/%s)' % fig_name) # for notebook !
+    print('\n')
 
+# %%
+for s, subject in enumerate(\
+                np.unique(dataset['subjects'])):
+
+    subject_files = [os.path.basename(f) for f in \
+        dataset['files'][subject==dataset['subjects']]]
+    virus = dataset['viruses'][subject==dataset['subjects']][0].split('+')[1]
+    print(' - %s (%s) :' % (subject, virus))
+    for s in subject_files:
+        print('     - [%s](../../Data/%s.md)' %\
+              (s.replace('.nwb',''), s.replace('.nwb','')))
+    print('\n')
+    
 # %%
 from scipy import stats
 fig, ax = pt.figure(left=1.1, ax_scale=(1.5,1.5), right=2.)
@@ -152,23 +166,24 @@ for v, virus in enumerate(['Grid1', 'Scramble']):
             ax.bar([i+v*(1+resp.shape[1])], 
                 [resp[:,i,:].mean()],
                 yerr=[stats.sem(resp[:,i,:].mean(axis=(1,2)))],
-                color = pt.copper(1-i/resp.shape[1]))
+                color = pt.spring(.2+.8*i/resp.shape[1]))
         # individual responses
         for j in range(resp.shape[0]):
             ax.plot(v*(1+resp.shape[1])+\
                     np.arange(resp.shape[1]),
                     resp[j,:,:,:].mean(axis=(1,2)), 
-                    'k-', lw=0.2)
+                    'w-', lw=0.2)
         
 for i in range(RESPS['Grid1'].shape[1]):
     pt.annotate(ax, i*'\n' + 'day %i' % (i+1), (1,1),
                 va='top',
-                color = pt.copper(1-i/resp.shape[1]))
+                color = pt.spring(.2+.8*i/resp.shape[1]))
 pt.set_plot(ax, 
             xticks=[1, 9],
             xticks_labels=\
             ['%s\n(N=%i)' % (key, len(RESPS[key])) for key in ['Grid1', 'Scramble']],
             ylabel='$\\delta$ $\\Delta$F/F')
+pt.timestamp(fig)
 pt.save(fig, notebook_folder, 
         'markBear-plasticity-Learning-summary.svg',
         transparent=True)
@@ -202,13 +217,13 @@ for v, virus in enumerate(['Grid1', 'Scramble']):
                     ax.plot(RESPS['t']+repeat*tshift, 
                         -shift*day+\
                             gaussian_filter1d(resp[rec, day, repeat, :], smoothing),
-                        color = pt.copper(1-day/resp.shape[1]))
+                        color = pt.spring(.2+.8*day/resp.shape[1]))
 
                     if repeat==0:
                         ax.annotate('day %i ' % (day+1),
                                     (-3, -shift*day), ha='right',
                                     xycoords='data', 
-                                    color = pt.copper(1-day/resp.shape[1]))
+                                    color = pt.spring(.2+.8*day/resp.shape[1]))
                     if day==0:
                         ax.annotate('#%i' % (repeat+1),
                                     (tshift*repeat, -shift*(resp.shape[1]-.5)), 
@@ -217,10 +232,12 @@ for v, virus in enumerate(['Grid1', 'Scramble']):
             pt.draw_bar_scales(ax, 
                                loc='top-right',
                     Ybar=0.4, Ybar_label='0.4$\\Delta$F/F', 
-                    Xbar=4, Xbar_label='4s', color='k')
+                    Xbar=4, Xbar_label='4s')
 
             fig_name = 'bear-plasticity-learning-%s-mouse%i.svg' % (virus, rec+1)
             print('![](figs/%s)' % fig_name) # for notebook !
+            print('\n')
+            pt.timestamp(fig)
             pt.save(fig, notebook_folder, fig_name)
                     
         
@@ -255,14 +272,14 @@ for v, virus in enumerate(['Grid1', 'Scramble']):
                     -shift*day+\
                         resp[:, day, repeat, :].mean(axis=0),
                     sy=stats.sem(resp[:, day, repeat, :], axis=0),
-                    color = pt.copper(1-day/resp.shape[1]),
+                    color = pt.spring(.2+.8*day/resp.shape[1]),
                     ax=ax)
 
                 if repeat==0:
                     ax.annotate('day %i ' % (day+1),
                                 (-3, -shift*day), ha='right',
                                 xycoords='data', 
-                                color = pt.copper(1-day/resp.shape[1]))
+                                color = pt.spring(.2+.8*day/resp.shape[1]))
                 if day==0:
                     ax.annotate('#%i' % (repeat+1),
                                 (tshift*repeat, -shift*(resp.shape[1]-.5)), 
@@ -271,10 +288,12 @@ for v, virus in enumerate(['Grid1', 'Scramble']):
         pt.draw_bar_scales(ax, 
                             loc='top-right',
                 Ybar=0.5, Ybar_label='0.5$\Delta$F/F', 
-                Xbar=10, Xbar_label='10s', color='k')
+                Xbar=10, Xbar_label='10s')
         
     fig_name = 'bear-plasticity-learning-mice-average-%s.svg' % (virus)
     print('![](figs/%s)' % fig_name) # for notebook !
+    print('\n')
+    pt.timestamp(fig)
     pt.save(fig, notebook_folder, fig_name)
 
 # %%
