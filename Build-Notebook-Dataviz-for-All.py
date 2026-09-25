@@ -22,12 +22,13 @@ notebook_folder =\
     os.path.join(os.path.expanduser('~'), 
         'OneDrive - ICM', 'Lab-Notebook', 'Data')
 
-redo_figs = False
+redo_figs = True
 
 # %%
 dataset = scan_folder_for_NWBfiles(\
         os.path.join(os.path.expanduser('~'), 
             'DATA', 'Taddy', 'PN_shGrid1-2026'),
+            for_protocol='plasticity-60'
             )
 
 # %%
@@ -49,11 +50,23 @@ def single_rec(filename):
 
     md = os.path.join(notebook_folder, fn+'.md')
 
-    text = '# %s \n \n' % fn
+    text = '## Recording \n\n'
+    text = '-  %s \n ' % fn
     data = Data(filename)
+    if data.has_visual_stim():
+        data.build_visual_stim() # real recording (possibly stopped)
+        nReal = data.visual_stim.experiment['time_start'].shape[0]
+        # we rebuild a full experiment
+        data.visual_stim.init_experiment(data.visual_stim.protocol,
+                                        data.visual_stim.protocol)
+        nFull = data.visual_stim.experiment['time_start'].shape[0]
+        data.build_visual_stim() # back to real recording 
+        text += '- episodes: %i / %i   \n' % (nReal, nFull)
+    text += '\n'
 
     text += '### mouse \n\n'
     text += '- ID: %s  \n' % data.nwbfile.subject.subject_id
+    text += '- virus: %s \n' % data.nwbfile.virus
     text += '- genotype/strain : %s / %s \n' %\
          (data.nwbfile.subject.genotype, data.nwbfile.subject.strain)
     text += '- age @rec: %s  \n' % data.nwbfile.subject.age
@@ -145,20 +158,17 @@ def single_rec(filename):
     for i, t0 in enumerate(\
         np.linspace(0, data.tlim[-1]-60,3)):
         if redo_figs:
-            try:
-                fig, AX = \
-                    plot_raw(data, 
-                            tlim=[t0, t0+60],
-                            settings=get_settings(with_visual_stim=True),
-                            fig_args=dict(ax_scale=(2.5,20.), 
-                                        bottom=.001, top=.15, left=.3, right=.3))
-                pt.save(fig, os.path.join(notebook_folder, 'figs'), 
-                        fn+'-%i.svg' % (i+1))
-            except BaseException as be:
-                print(be)
+            fig, AX = \
+                plot_raw(data, 
+                        tlim=[t0, t0+60],
+                        settings=get_settings(with_visual_stim=True),
+                        fig_args=dict(ax_scale=(2.5,20.), 
+                                    bottom=.001, top=.15, left=.3, right=.3))
+            pt.save(fig, os.path.join(notebook_folder, 'figs'), 
+                    fn+'-%i.svg' % (i+1))
 
         text += '### Zoom %i : 1min @ %.1fmin (%.1fs)    \n' % (i+1, t0/60., t0)
-        text += '![](figs/%s)    \n' % (fn+'-%i.svg' % (i+1))
+        text += '![](figs/%s)    \n\n' % (fn+'-%i.svg' % (i+1))
 
     with open(md, 'w') as f:
         f.write(text)
@@ -167,6 +177,16 @@ def single_rec(filename):
 text = single_rec(dataset['files'][0])
 print(text)
 # %%
-for f in dataset['files']:
-    _ = single_rec(f)
+if 1:
+    for f in dataset['files']:
+        _ = single_rec(f)
+# %%
+data = Data(dataset['files'][0])
+data.build_visual_stim()
+nReal = data.visual_stim.experiment['time_start'].shape[0]
+data.visual_stim.init_experiment(data.visual_stim.protocol,
+                                 data.visual_stim.protocol)
+nFull = data.visual_stim.experiment['time_start'].shape[0]
+data.build_visual_stim()
+print(nReal, nFull)
 # %%

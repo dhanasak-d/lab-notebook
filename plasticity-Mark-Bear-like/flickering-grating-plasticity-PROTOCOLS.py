@@ -32,9 +32,9 @@ def GratingPhaseReversing(Orientation=45., # deg.
                           Duration=10.0):
   return """{
     "Presentation": "Stimuli-Sequence",
-    "Stimulus": "grating",
+    "Stimulus": "flickering_grating",
     "Screen": "%s",
-    "movie_refresh_freq": 2.0,
+    "movie_refresh_freq": 30.0,
     "-----------------------------------------------------------------1":0,
     "presentation-duration": %.1f,
     "presentation-interstim-period": %.1f,
@@ -47,6 +47,7 @@ def GratingPhaseReversing(Orientation=45., # deg.
     "angle": %.1f,
     "speed": 1.0,
     "spatial-freq":0.05, 
+    "flickering_freq":2.0, 
     "screen-color": 1.0
   }
   """ % (Screen, Duration, interstim, jitter, Nrepeat, Orientation)
@@ -63,7 +64,7 @@ def MixedNovelFamiliar(NovelOrientation=135.,
     "Presentation": "multiprotocol",
     "shuffling" :"full",
     "shuffling-seed" :34,
-    "movie_refresh_freq":2.0,
+    "movie_refresh_freq":30.0,
     "units":"cm",
     "presentation-interstim-period": %.1f,
     "presentation-interstim-jitter": %.1f,
@@ -89,11 +90,17 @@ def MixedNovelFamiliar(NovelOrientation=135.,
 
 if 1:
   build_movie(GratingPhaseReversing(Orientation=45.0, Screen=Screen, 
-                                    # Nrepeat=100, 
-                                    Nrepeat=2, 
-                                    Duration=5., interstim=5, jitter=3), 
-              name='Learning-Familiar-Grating-45deg-v2P')#, rm=False)
+                                    Nrepeat=10, 
+                                    # Nrepeat=2, 
+                                    Duration=100., interstim=30., jitter=10.), 
+              name='Learning-Familiar-Grating-45deg')#, rm=False)
+  # build_movie(GratingPhaseReversing(Orientation=45.0, Screen=Screen, 
+  #                                   Nrepeat=100, 
+  #                                   # Nrepeat=2, 
+  #                                   Duration=5., interstim=5, jitter=3), 
+  #             name='Learning-Familiar-Grating-45deg-v2P')#, rm=False)
   build_movie(MixedNovelFamiliar(NovelOrientation=135.0, FamiliarOrientation=45.0, Screen=Screen, 
-                                 Nrepeat=2, 
+                                 Nrepeat=100, 
+                                #  Nrepeat=2, 
                                  Duration=5.0, interstim=5, jitter=3.), 
               name='Testing-Novel-Familiar-Grating-135deg-45deg-v2P')#, rm=False)
