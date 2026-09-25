@@ -27,8 +27,7 @@ redo_figs = True
 # %%
 dataset = scan_folder_for_NWBfiles(\
         os.path.join(os.path.expanduser('~'), 
-            'DATA', 'Taddy', 'PN_shGrid1-2026'),
-            for_protocol='plasticity-60'
+            'DATA', 'Taddy', 'PN_shGrid1-2026')
             )
 
 # %%
@@ -51,20 +50,21 @@ def single_rec(filename):
     md = os.path.join(notebook_folder, fn+'.md')
 
     text = '## Recording \n\n'
-    text = '-  %s \n ' % fn
+    text += '-  %s \n ' % fn
     data = Data(filename)
     if data.has_visual_stim():
         data.build_visual_stim() # real recording (possibly stopped)
-        nReal = data.visual_stim.experiment['time_start'].shape[0]
+        nReal = len(data.visual_stim.experiment['time_start'])
         # we rebuild a full experiment
-        data.visual_stim.init_experiment(data.visual_stim.protocol,
-                                        data.visual_stim.protocol)
-        nFull = data.visual_stim.experiment['time_start'].shape[0]
-        data.build_visual_stim() # back to real recording 
-        text += '- episodes: %i / %i   \n' % (nReal, nFull)
+        # data.visual_stim.init_experiment(data.visual_stim.protocol,
+        #                                 data.visual_stim.protocol)
+        # nFull = len(data.visual_stim.experiment['time_start'])
+        # data.build_visual_stim() # back to real recording 
+        # text += '- episodes: %i / %i   \n' % (nReal, nFull)
+        text += '- episodes: %i \n' % nReal
     text += '\n'
 
-    text += '### mouse \n\n'
+    text += '## mouse & preparation \n\n'
     text += '- ID: %s  \n' % data.nwbfile.subject.subject_id
     text += '- virus: %s \n' % data.nwbfile.virus
     text += '- genotype/strain : %s / %s \n' %\
@@ -167,7 +167,7 @@ def single_rec(filename):
             pt.save(fig, os.path.join(notebook_folder, 'figs'), 
                     fn+'-%i.svg' % (i+1))
 
-        text += '### Zoom %i : 1min @ %.1fmin (%.1fs)    \n' % (i+1, t0/60., t0)
+        text += '## Zoom %i : 1min @ %.1fmin (%.1fs)    \n' % (i+1, t0/60., t0)
         text += '![](figs/%s)    \n\n' % (fn+'-%i.svg' % (i+1))
 
     with open(md, 'w') as f:
