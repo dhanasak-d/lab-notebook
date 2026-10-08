@@ -111,6 +111,7 @@ def single_rec(filename):
 
     def get_settings(subsampling_factor=1,
                      with_visual_stim=False):
+
         settings = {}
 
         if data.has_running():
