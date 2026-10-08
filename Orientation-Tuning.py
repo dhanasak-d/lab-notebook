@@ -3,7 +3,7 @@
 
 # %%
 # general python modules for scientific analysis
-import sys, pathlib, os
+import sys, pathlib, os, shutil
 import numpy as np
 
 sys.path += ['physion/src'] # add src code directory for physion
@@ -16,20 +16,19 @@ from physion.analysis.episodes.build import EpisodeData
 from physion.dataviz.episodes.trial_average\
               import plot as plot_trial_average
 
-pt.set_style('dark')
+# pt.set_style('dark')
 
 # %%
 # folder = os.path.join(os.path.expanduser('~'), 
 #                 'DATA', 'Taddy', 'GluN3A', 'NWBs')
-folder = os.path.join('E:', 
-                'DATA', 'Taddy', 'GluN3A')
+folder = os.path.join('E:', 'DATA', 'Taddy', 'GluN3A')
 
 notebook_folder =\
     os.path.join(os.path.expanduser('~'), 
         'OneDrive - ICM', 'Lab-Notebook', 'Projects', 'Taddy-GluN3', 'figs')
 
-if not os.path.isdir(os.path.join(folder, 'temp')):
-    os.mkdir(os.path.join(folder, 'temp'))
+if not os.path.isdir(os.path.join(folder, 'summary')):
+    os.mkdir(os.path.join(folder, 'summary'))
 
 # %%
 PROTOCOLS = [\
@@ -38,8 +37,8 @@ PROTOCOLS = [\
     'tuning-high-contrast']
 
 
-if not os.path.isdir(os.path.join(folder, 'temp')):
-    os.mkdir(os.path.join(folder, 'temp'))
+if not os.path.isdir(os.path.join(folder, 'summary')):
+    os.mkdir(os.path.join(folder, 'summary'))
 
 dataset = scan_folder_for_NWBfiles(\
             folder,
@@ -159,6 +158,9 @@ groups = {
 parallelized = False
 nMIN_DATAFILES = 2
 
+if not os.path.isdir(os.path.join(folder, 'temp')):
+    os.mkdir(os.path.join(folder, 'temp'))
+
 for g in groups:
 
     for PROTOCOL in PROTOCOLS:
@@ -217,7 +219,7 @@ for g in groups:
                     Tunings.append(Tuning)
 
             # # saving data
-            np.save(os.path.join(folder, 'Tunings_%s_%s.npy' % (c, quantity)), Tunings)
+            np.save(os.path.join(folder, 'summary', 'Tunings_%s_%s.npy' % (c, quantity)), Tunings)
 
         else:
             print()
@@ -229,7 +231,7 @@ for g in groups:
 
         print('-----------------------------------------------------------------')
         print('=================================================================')
-# shutil.rmtree(os.path.join(folder, 'temp'))
+shutil.rmtree(os.path.join(folder, 'temp'))
 
 # %%
 quantity = 'dFoF'
@@ -242,7 +244,7 @@ for PROTOCOL in PROTOCOLS:
                             ['shRNA_%s_%s' % (PROTOCOL, quantity),
                              'scramble_%s_%s' % (PROTOCOL, quantity)],
                             average_by='sessions',
-                            path=folder)
+                            path=os.path.join(folder, 'summary'))
     fig.suptitle(PROTOCOL)
     fig_name = 'orientation-tuning-per-session-%s.svg' % PROTOCOL
     pt.save(fig, notebook_folder, fig_name)
@@ -252,7 +254,7 @@ for PROTOCOL in PROTOCOLS:
                             ['shRNA_%s_%s' % (PROTOCOL, quantity),
                              'scramble_%s_%s' % (PROTOCOL, quantity)],
                             average_by='ROIs',
-                            path=folder)
+                            path=os.path.join(folder, 'summary'))
     fig.suptitle(PROTOCOL)
     fig_name = 'orientation-tuning-per-ROIs-%s.svg' % PROTOCOL
     pt.save(fig, notebook_folder, fig_name)
@@ -263,7 +265,7 @@ for PROTOCOL in PROTOCOLS:
                              'scramble_%s_%s' % (PROTOCOL, quantity)],
                             #   average_by='ROIs',
                             #  using='fit',
-                            path=folder)
+                            path=os.path.join(folder, 'summary'))
     fig.suptitle(PROTOCOL)
     fig_name = 'orientation-selectivity-%s.svg' % PROTOCOL
     pt.save(fig, notebook_folder, fig_name)

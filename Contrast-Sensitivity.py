@@ -3,7 +3,7 @@
 
 # %%
 # general python modules for scientific analysis
-import sys, pathlib, os
+import sys, pathlib, os, shutil
 import numpy as np
 
 sys.path += ['physion/src'] # add src code directory for physion
@@ -17,22 +17,21 @@ from physion.dataviz.episodes.trial_average import plot as plot_trial_average
 pt.set_style('dark')
 
 # %%
-folder = os.path.join(os.path.expanduser('~'), 
-                'DATA', 'Taddy', 'PN_shGrid1-2026', 'NWBs')
+# folder = os.path.join(os.path.expanduser('~'), 
+#                 'DATA', 'Taddy', 'PN_shGrid1-2026', 'NWBs')
+folder = os.path.join('E:', 'DATA', 'Taddy', 'GluN3A')
 
 notebook_folder =\
     os.path.join(os.path.expanduser('~'), 
         'OneDrive - ICM', 'Lab-Notebook', 'Projects', 'Taddy-GluN3', 'figs')
 
-if not os.path.isdir(os.path.join(folder, 'temp')):
-    os.mkdir(os.path.join(folder, 'temp'))
+if not os.path.isdir(os.path.join(folder, 'summary')):
+    os.mkdir(os.path.join(folder, 'summary'))
 
 # %%
 dataset = scan_folder_for_NWBfiles(\
-        os.path.join(os.path.expanduser('~'), 
-            'DATA', 'Taddy', 'GluN3A'),
-            for_protocols=['contrast-sensitivity'],
-            )
+            folder,
+            for_protocols=['contrast-sensitivity'])
 
 # %%
 
@@ -60,9 +59,10 @@ for v, virus in enumerate(\
 # %%
 dFoF_parameters = dict(\
     roi_to_neuropil_fluo_inclusion_factor= 0.0, # no factor here
-    neuropil_correction_factor = 0.5,
+    # neuropil_correction_factor = 0.7,
+    with_computed_neuropil_fact=True,
     method_for_F0 = 'sliding_percentile',
-    percentile=5., # percent
+    percentile=10., # percent
     sliding_window = 5*60, # seconds
 )
 
@@ -92,7 +92,7 @@ def cell_sensitivity_example_fig(filename,
                            quantities=[quantity],
                            protocol_name='contrast-sensitivity',
                            verbose=False)
-    print(ep.varied_parameters)
+
     fig, AX = pt.plt.subplots(Nsamples, 
                               len(ep.varied_parameters['contrast']), 
                           figsize=(7,7))
@@ -227,12 +227,20 @@ def process_file(filename, i, c, quantity):
 
 # %%
 
+# groups = {
+#     'shRNA':{'virus':'CamKII-Cre+shGrid1'},
+#     'scramble':{'virus':'CamKII-Cre+shScramble'}
+# }
 groups = {
-    'shRNA':{'virus':'CamKII-Cre+shGrid1'},
-    'scramble':{'virus':'CamKII-Cre+shScramble'}
+    'shRNA':{'virus':'shRNA_Glun3A'},
+    'scramble':{'virus':'Scramble'}
 }
 
+
 parallelized = False
+
+if not os.path.isdir(os.path.join(folder, 'temp')):
+    os.mkdir(os.path.join(folder, 'temp'))
 
 for c in groups:
 
@@ -291,8 +299,9 @@ for c in groups:
                 Sensitivities.append(Sensitivity)
 
         # # saving data
-        np.save(os.path.join(folder, 'Sensitivities_%s_%s.npy' % (quantity, c)), 
+        np.save(os.path.join(folder, 'summary', 'Sensitivities_%s_%s.npy' % (quantity, c)), 
                 Sensitivities)
+shutil.rmtree(os.path.join(folder, 'temp'))
 
 
 
@@ -305,7 +314,7 @@ fig, ax = plot_contrast_sensitivity(\
                         ['%s_scramble' % quantity, 
                          '%s_shRNA' % quantity],
                           average_by='ROIs',
-                        path=os.path.join(folder))
+                        path=os.path.join(folder, 'summary'))
 
 fig_name = 'contrast-sensitivity-per-ROIs.svg'
 pt.save(fig, notebook_folder, fig_name)
@@ -314,21 +323,13 @@ fig, ax = plot_contrast_sensitivity(\
                         ['%s_scramble' % quantity, 
                          '%s_shRNA' % quantity],
                           average_by='sessions',
-                        path=os.path.join(folder))
+                        path=os.path.join(folder, 'summary'))
 fig_name = 'contrast-sensitivity-per-session.svg'
 pt.save(fig, notebook_folder, fig_name)
 
-# %%
-%dataset = scan_folder_for_NWBfiles("F:")
-
-
-# %%
-for f in dataset['files']:
-    data = Data(f)
-    if 'ophys' in data.nwbfile.processing:
-        planes = data.nwbfile.processing['ophys']['Fluorescence']['Fluorescence'].rois['plane'].data[:]
-        if len(np.unique(planes))>1:
-            print(f)
-            print(data.protocols)
-            print(np.unique(planes))
-# %%
+fig, ax = plot_contrast_responsiveness(\
+                        ['%s_scramble' % quantity, 
+                         '%s_shRNA' % quantity],
+                        path=os.path.join(folder, 'summary'))
+fig_name = 'contrast-responsiveness-per-session.svg'
+pt.save(fig, notebook_folder, fig_name)
