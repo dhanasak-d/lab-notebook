@@ -19,8 +19,10 @@ from physion.dataviz.episodes.trial_average\
 pt.set_style('dark')
 
 # %%
-folder = os.path.join(os.path.expanduser('~'), 
-                'DATA', 'Taddy', 'PN_shGrid1-2026', 'NWBs')
+# folder = os.path.join(os.path.expanduser('~'), 
+#                 'DATA', 'Taddy', 'GluN3A', 'NWBs')
+folder = os.path.join('E:', 
+                'DATA', 'Taddy', 'GluN3A')
 
 notebook_folder =\
     os.path.join(os.path.expanduser('~'), 
@@ -35,15 +37,12 @@ PROTOCOLS = [\
     'tuning-mid-contrast',
     'tuning-high-contrast']
 
-folder = os.path.join(os.path.expanduser('~'), 
-                'DATA', 'Taddy', 'PN_shGrid1-2026', 'NWBs')
 
 if not os.path.isdir(os.path.join(folder, 'temp')):
     os.mkdir(os.path.join(folder, 'temp'))
 
 dataset = scan_folder_for_NWBfiles(\
-        os.path.join(os.path.expanduser('~'), 
-            'DATA', 'Taddy', 'PN_shGrid1-2026'),
+            folder,
             for_protocols=PROTOCOLS
             )
 
@@ -72,9 +71,10 @@ for v, virus in enumerate(\
 # %%
 dFoF_parameters = dict(\
     roi_to_neuropil_fluo_inclusion_factor= 0.0, # no factor here
-    neuropil_correction_factor = 0.7,
+    # neuropil_correction_factor = 0.7,
+    with_computed_neuropil_fact=True,
     method_for_F0 = 'sliding_percentile',
-    percentile=5., # percent
+    percentile=10., # percent
     sliding_window = 5*60, # seconds
 )
 
@@ -147,9 +147,13 @@ def process_file(filename, i, c, PROTOCOL, quantity):
 from physion.analysis.protocols.orientation_tuning import\
     compute_tuning_response_per_cells
 
+# groups = {
+#     'shRNA':{'virus':'CamKII-Cre+shGrid1'},
+#     'scramble':{'virus':'CamKII-Cre+shScramble'}
+# }
 groups = {
-    'shRNA':{'virus':'CamKII-Cre+shGrid1'},
-    'scramble':{'virus':'CamKII-Cre+shScramble'}
+    'shRNA':{'virus':'shRNA_Glun3A'},
+    'scramble':{'virus':'Scramble'}
 }
 
 parallelized = False
@@ -160,7 +164,7 @@ for g in groups:
     for PROTOCOL in PROTOCOLS:
 
         c = '%s_%s' % (g, PROTOCOL)
-
+        print(c)
         # FILTER
         # 1) protocol type: contrast sensitivity
         cond = np.array([np.sum([PROTOCOL in p for p in protocols])\

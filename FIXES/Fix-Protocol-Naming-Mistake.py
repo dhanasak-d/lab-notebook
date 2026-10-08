@@ -5,6 +5,8 @@ import json
 folder = os.path.join(os.path.expanduser('~'), 
             'DATA', 'Taddy', 'PN_shGrid1-2026', 'processed')
 
+folder = os.path.join('E:', 'DATA', 'Taddy')
+
 for f, _, fns in os.walk(folder):
     for fn in fns:
         if fn=='protocol.json':

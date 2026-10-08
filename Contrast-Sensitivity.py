@@ -30,7 +30,7 @@ if not os.path.isdir(os.path.join(folder, 'temp')):
 # %%
 dataset = scan_folder_for_NWBfiles(\
         os.path.join(os.path.expanduser('~'), 
-            'DATA', 'Taddy', 'PN_shGrid1-2026'),
+            'DATA', 'Taddy', 'GluN3A'),
             for_protocols=['contrast-sensitivity'],
             )
 
@@ -318,4 +318,17 @@ fig, ax = plot_contrast_sensitivity(\
 fig_name = 'contrast-sensitivity-per-session.svg'
 pt.save(fig, notebook_folder, fig_name)
 
+# %%
+%dataset = scan_folder_for_NWBfiles("F:")
+
+
+# %%
+for f in dataset['files']:
+    data = Data(f)
+    if 'ophys' in data.nwbfile.processing:
+        planes = data.nwbfile.processing['ophys']['Fluorescence']['Fluorescence'].rois['plane'].data[:]
+        if len(np.unique(planes))>1:
+            print(f)
+            print(data.protocols)
+            print(np.unique(planes))
 # %%
