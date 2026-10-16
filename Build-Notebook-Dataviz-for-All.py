@@ -17,6 +17,7 @@ pt.set_style('dark')
 # %%
 folder = os.path.join(os.path.expanduser('~'), 
             'DATA', 'Taddy', 'PN_shGrid1-2026', 'NWBs')
+folder = os.path.join('E:', 'DATA', 'Taddy', 'GluN3A')
 
 notebook_folder =\
     os.path.join(os.path.expanduser('~'), 
@@ -25,10 +26,7 @@ notebook_folder =\
 redo_figs = True
 
 # %%
-dataset = scan_folder_for_NWBfiles(\
-        os.path.join(os.path.expanduser('~'), 
-            'DATA', 'Taddy', 'PN_shGrid1-2026')
-            )
+dataset = scan_folder_for_NWBfiles(folder)
 
 # %%
 quantity = 'dFoF'

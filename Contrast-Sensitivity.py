@@ -59,8 +59,8 @@ for v, virus in enumerate(\
 # %%
 dFoF_parameters = dict(\
     roi_to_neuropil_fluo_inclusion_factor= 0.0, # no factor here
-    # neuropil_correction_factor = 0.7,
-    with_computed_neuropil_fact=True,
+    neuropil_correction_factor = 0.6,
+    # with_computed_neuropil_fact=True,
     method_for_F0 = 'sliding_percentile',
     percentile=10., # percent
     sliding_window = 5*60, # seconds
@@ -86,7 +86,7 @@ def cell_sensitivity_example_fig(filename,
     data = Data(filename)
     data.build_dFoF(**dFoF_parameters)
     if quantity=='Deconvolved':
-        data.build_Deconvolved()
+        data.build_Deconvolved(quantity='dFoF')
 
     ep = EpisodeData(data,
                            quantities=[quantity],
@@ -191,7 +191,7 @@ def process_file(filename, i, c, quantity):
     if data.nROIs>=nMIN_ROIs:
 
         if quantity=='Deconvolved':
-            data.build_Deconvolved()
+            data.build_Deconvolved(quantity='dFoF')
 
         # try:
         if True:
@@ -333,3 +333,4 @@ fig, ax = plot_contrast_responsiveness(\
                         path=os.path.join(folder, 'summary'))
 fig_name = 'contrast-responsiveness-per-session.svg'
 pt.save(fig, notebook_folder, fig_name)
+# %%

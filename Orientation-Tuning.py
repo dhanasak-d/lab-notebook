@@ -70,8 +70,8 @@ for v, virus in enumerate(\
 # %%
 dFoF_parameters = dict(\
     roi_to_neuropil_fluo_inclusion_factor= 0.0, # no factor here
-    # neuropil_correction_factor = 0.7,
-    with_computed_neuropil_fact=True,
+    neuropil_correction_factor = 0.6,
+    #with_computed_neuropil_fact=True,
     method_for_F0 = 'sliding_percentile',
     percentile=10., # percent
     sliding_window = 5*60, # seconds
@@ -103,7 +103,7 @@ def process_file(filename, i, c, PROTOCOL, quantity):
     if data.nROIs>=nMIN_ROIs:
 
         if quantity=='Deconvolved':
-            data.build_Deconvolved()
+            data.build_Deconvolved(quantity='dFoF')
 
         # try:
         if True:
@@ -174,7 +174,7 @@ for g in groups:
         # 2) virus
         cond = cond & (dataset['viruses']==groups[g]['virus'])
 
-        if len(dataset['files'][cond])>nMIN_DATAFILES:
+        if len(dataset['files'][cond])>=nMIN_DATAFILES:
 
             if parallelized:
                 ################################################
