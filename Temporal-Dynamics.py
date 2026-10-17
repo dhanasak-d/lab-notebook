@@ -69,7 +69,7 @@ def process_file(filename):
     print('    analyzing file: %s  [...] ' % filename)
     data = Data(filename, verbose=False)
     data.build_dFoF(**dFoF_parameters, verbose=False)
-    data.build_Deconvolved(Tau=TAU_DECONVOLUTION)
+    data.build_Deconvolved(Tau=TAU_DECONVOLUTION, quantity='dFoF')
 
     quantities = ['Deconvolved']
     if 'Running-Speed' in data.nwbfile.acquisition:
