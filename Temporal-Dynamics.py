@@ -49,7 +49,7 @@ dFoF_parameters = dict(\
         )
 
 # %%
-folder = os.path.join('E:', 'DATA', 'Taddy', 'GluN3A')
+folder = r'E:\DATA\Taddy\PN_shGrid1-2026\NWBs'
 print(f"Data folder: {folder}")
 print(f"Folder exists: {os.path.exists(folder)}")
 
@@ -80,7 +80,7 @@ dataset = scan_folder_for_NWBfiles(\
 def process_file(filename):
 
     # to be a valid datafile:
-    nMIN_ROIs = 4
+    nMIN_ROIs = 50
 
     TAU_DECONVOLUTION = 0.8
 
@@ -133,7 +133,7 @@ def process_file(filename):
                     'subject':data.nwbfile.subject.subject_id,
             }
 
-            fn = os.path.join(folder.replace('GluN3A', 'temp'),
+            fn = os.path.join(folder.replace('NWBs', 'temp'),
                                  'tempResponse-%s-%s.npy' %\
                                       (protocol, 
                                        os.path.basename(filename).replace('.nwb','')))
@@ -164,7 +164,7 @@ for v, virus in enumerate(viruses_sorted):
     for protocol in PROTOCOLS:
         summary[virus][protocol] = {'frac_running':[]}
         for filename in dataset['files'][virus_cond]:
-            fn = os.path.join(folder.replace('GluN3A', 'temp'),
+            fn = os.path.join(folder.replace('NWBs', 'temp'),
                                     'tempResponse-%s-%s.npy' %\
                                         (protocol, 
                                         os.path.basename(filename).replace('.nwb','')))
@@ -186,7 +186,7 @@ filename = dataset['files'][0]
 
 fig, AX = pt.figure(axes=(3,1), )
 for ax, protocol in zip(AX, PROTOCOLS):
-    fn = os.path.join(folder.replace('GluN3A', 'temp'),
+    fn = os.path.join(folder.replace('NWBs', 'temp'),
                             'tempResponse-%s-%s.npy' %\
                                 (protocol, 
                                 os.path.basename(filename).replace('.nwb','')))
@@ -213,7 +213,7 @@ def build_summary(over='sessions',
         protocol='contrast-sensitivity' 
         summary[virus][protocol] = {'frac_resp':[]}
         for filename in dataset['files'][virus_cond]:
-            fn = os.path.join(folder.replace('GluN3A', 'temp'),
+            fn = os.path.join(folder.replace('NWBs', 'temp'),
                                     'tempResponse-%s-%s.npy' %\
                                         (protocol, 
                                         os.path.basename(filename).replace('.nwb','')))
@@ -236,7 +236,7 @@ def build_summary(over='sessions',
 
 
             for filename in dataset['files'][virus_cond]:
-                fn = os.path.join(folder.replace('GluN3A', 'temp'),
+                fn = os.path.join(folder.replace('NWBs', 'temp'),
                                         'tempResponse-%s-%s.npy' %\
                                             (protocol, 
                                             os.path.basename(filename).replace('.nwb','')))
@@ -265,6 +265,9 @@ def build_summary(over='sessions',
             summary[virus][protocol]['frac_resp'] =\
                     np.array(summary[virus][protocol]['frac_resp'])
     summary['t'] = responses['t']
+
+    ==remove temp folder here==
+
     return summary
 summary = build_summary('sessions')
 
