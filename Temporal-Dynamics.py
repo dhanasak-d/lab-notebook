@@ -7,6 +7,7 @@ import os
 import os, sys , shutil 
 import multiprocessing
 import numpy as np
+from scipy import stats
 
 sys.path += ['physion/src']
 
@@ -17,6 +18,28 @@ import physion.utils.plot_tools as pt
 
 parallelized, debug = False, False 
 
+# Custom virus order and colors for GluN3A dataset
+# Define which virus is the control (scramble) and which is the experimental (GluN3A)
+# The code will put scramble first and assign white to it, green to GluN3A
+# If your virus names are different, update these:
+SCRAMBLE_KEYWORD = 'Scramble'  # Will match any virus name containing 'Scramble'
+GLUN3A_KEYWORD = 'GluN3A'  # Will match any virus name containing 'GluN3A'
+
+def sort_viruses_by_order(virus_list):
+    """Sort viruses so that scramble comes first, then GluN3A"""
+    # Separate into scramble and non-scramble
+    scramble_viruses = [v for v in virus_list if SCRAMBLE_KEYWORD in v]
+    other_viruses = [v for v in virus_list if SCRAMBLE_KEYWORD not in v]
+    # Put scramble first, then others (assuming one scramble and one GluN3A)
+    return scramble_viruses + other_viruses
+
+def get_virus_color(virus_name):
+    """Get color for a virus: white for scramble, lime green for GluN3A"""
+    if SCRAMBLE_KEYWORD in virus_name:
+        return 'white'
+    else:
+        return 'lime'  # Bright green
+
 dFoF_parameters = dict(\
         roi_to_neuropil_fluo_inclusion_factor=0., # no factor here
         neuropil_correction_factor = 0.5,
@@ -25,15 +48,19 @@ dFoF_parameters = dict(\
         sliding_window = 5*60, # seconds
         )
 
-folder = os.path.join(os.path.expanduser('~'), 
-                'DATA', 'Taddy', 'PN_shGrid1-2026', 'NWBs')
+# %%
+folder = os.path.join('E:', 'DATA', 'Taddy', 'GluN3A')
+print(f"Data folder: {folder}")
+print(f"Folder exists: {os.path.exists(folder)}")
+
+
 
 notebook_folder =\
     os.path.join(os.path.expanduser('~'), 
         'OneDrive - ICM', 'Lab-Notebook', 'Projects', 'Taddy-GluN3', 'figs')
 
-if not os.path.isdir(os.path.join(folder, 'temp')):
-    os.mkdir(folder.replace('NWBs', 'temp'))
+if not os.path.isdir(os.path.join(folder, 'summary')):
+    os.mkdir(os.path.join(folder, 'summary'))
 
 pt.set_style('dark')
 
@@ -46,8 +73,7 @@ PROTOCOLS = [\
     'contrast-sensitivity']
 
 dataset = scan_folder_for_NWBfiles(\
-        os.path.join(os.path.expanduser('~'), 
-            'DATA', 'Taddy', 'PN_shGrid1-2026'),
+        folder,
             for_protocols=PROTOCOLS
             )
 # %%
@@ -60,11 +86,11 @@ def process_file(filename):
 
     # statistical test for visually-evoked-responses
     stat_test_props=dict(interval_pre=[-1,0],
-                         interval_post=[0.,1],                                   
-                         test='ttest',                                            
+                         interval_post=[0.,1],                                  
+                         test='ttest',                                           
                          sign='positive')
 
-    response_significance_threshold=1e-3
+    response_significance_threshold=1e-2
 
     print('    analyzing file: %s  [...] ' % filename)
     data = Data(filename, verbose=False)
@@ -107,10 +133,11 @@ def process_file(filename):
                     'subject':data.nwbfile.subject.subject_id,
             }
 
-            fn = os.path.join(folder.replace('NWBs', 'temp'),
+            fn = os.path.join(folder.replace('GluN3A', 'temp'),
                                  'tempResponse-%s-%s.npy' %\
                                       (protocol, 
                                        os.path.basename(filename).replace('.nwb','')))
+            os.makedirs(os.path.dirname(fn), exist_ok=True)
             np.save(fn, Response)
             print('      [v] --> %s - included, n=%i ROIs ' % (protocol, data.nROIs))
             print('                ', fn)
@@ -125,17 +152,19 @@ for i, f in enumerate(dataset['files']):
 # check running
 RUNNING_THRESHOLD = 0.1
 running = {}
+summary = {}
 
 fig, ax = pt.figure(ax_scale=(1.,1.2))
-for v, virus in enumerate(\
-        np.unique(dataset['viruses'])[::-1]):
+viruses_sorted = sort_viruses_by_order(np.unique(dataset['viruses']))
+for v, virus in enumerate(viruses_sorted):
     running[virus] = []
+    summary[virus] = {}
     virus_cond = (virus==dataset['viruses'])
 
     for protocol in PROTOCOLS:
         summary[virus][protocol] = {'frac_running':[]}
         for filename in dataset['files'][virus_cond]:
-            fn = os.path.join(folder.replace('NWBs', 'temp'),
+            fn = os.path.join(folder.replace('GluN3A', 'temp'),
                                     'tempResponse-%s-%s.npy' %\
                                         (protocol, 
                                         os.path.basename(filename).replace('.nwb','')))
@@ -148,7 +177,7 @@ for v, virus in enumerate(\
     ax.bar([v],
            [np.mean(running[virus])],
            yerr=[stats.sem(running[virus])],
-           color='C%i' % v, label=virus)
+           color=get_virus_color(virus), label=virus)
 pt.set_plot(ax, xticks=[], ylabel='% running ep. ')
 ax.legend(loc=(1,1))
 # %%
@@ -157,7 +186,7 @@ filename = dataset['files'][0]
 
 fig, AX = pt.figure(axes=(3,1), )
 for ax, protocol in zip(AX, PROTOCOLS):
-    fn = os.path.join(folder.replace('NWBs', 'temp'),
+    fn = os.path.join(folder.replace('GluN3A', 'temp'),
                             'tempResponse-%s-%s.npy' %\
                                 (protocol, 
                                 os.path.basename(filename).replace('.nwb','')))
@@ -173,8 +202,8 @@ def build_summary(over='sessions',
                   smoothing=7):
 
     summary = {'over':over}
-    for v, virus in enumerate(\
-            np.unique(dataset['viruses'])):
+    viruses_sorted = sort_viruses_by_order(np.unique(dataset['viruses']))
+    for v, virus in enumerate(viruses_sorted):
 
         print(' - %s:' % virus)
         summary[virus] = {}
@@ -184,7 +213,7 @@ def build_summary(over='sessions',
         protocol='contrast-sensitivity' 
         summary[virus][protocol] = {'frac_resp':[]}
         for filename in dataset['files'][virus_cond]:
-            fn = os.path.join(folder.replace('NWBs', 'temp'),
+            fn = os.path.join(folder.replace('GluN3A', 'temp'),
                                     'tempResponse-%s-%s.npy' %\
                                         (protocol, 
                                         os.path.basename(filename).replace('.nwb','')))
@@ -207,7 +236,7 @@ def build_summary(over='sessions',
 
 
             for filename in dataset['files'][virus_cond]:
-                fn = os.path.join(folder.replace('NWBs', 'temp'),
+                fn = os.path.join(folder.replace('GluN3A', 'temp'),
                                         'tempResponse-%s-%s.npy' %\
                                             (protocol, 
                                             os.path.basename(filename).replace('.nwb','')))
@@ -245,7 +274,7 @@ from scipy import stats
 fig, ax = pt.figure(ax_scale=(1.4,1.1), right=3)
 inset = pt.inset(ax, [1.4, 0., 0.3, 1.])
 contrast = np.linspace(0.05, 1., 8)
-viruses = np.unique(dataset['viruses'])[::-1]
+viruses = sort_viruses_by_order(np.unique(dataset['viruses']))
 protocol = 'contrast-sensitivity'
 slopes = {}
 for v, virus in enumerate(viruses):
@@ -254,21 +283,21 @@ for v, virus in enumerate(viruses):
         ax.bar([.04*v+contrast[c]],
             [np.mean(summary[virus][protocol]['frac_resp'][:,c])],
             yerr=[stats.sem(summary[virus][protocol]['frac_resp'][:,c])],
-            color='C%i' % v, width=.06)
+            color=get_virus_color(virus), width=.06)
     resp = summary[virus][protocol]['frac_resp']
     for r in range(resp.shape[0]):
         slopes[virus].append(np.polyfit(contrast, resp[r,:], 1)[0])
 
     # pt.violin(slopes[virus], x=[v],
-    #            color='C%i' % v, ax=inset)
+    #            color=get_virus_color(virus), ax=inset)
     pt.scatter([v], [np.mean(slopes[virus])], 
                sy=[stats.sem(slopes[virus])],
-               color='C%i' % v, ax=inset)
+               color=get_virus_color(virus), ax=inset)
 
 inset.annotate(
     pt.from_pval_to_star(
-        stats.ttest_ind(slopes['CamKII-Cre+shScramble'],
-               slopes['CamKII-Cre+shGrid1']).pvalue),
+        stats.ttest_ind(slopes[viruses[0]],
+               slopes[viruses[1]]).pvalue),
                (0.5,inset.get_ylim()[1]), ha='center')
 
 pt.set_plot(inset,
@@ -298,7 +327,7 @@ def make_fig(summary,
     baseline_cond = (summary['t']>baseline_window[0]) &\
             (summary['t']<baseline_window[1])
 
-    viruses = np.unique(dataset['viruses'])[::-1]
+    viruses = sort_viruses_by_order(np.unique(dataset['viruses']))
     insets = [] 
     for v, virus in enumerate(viruses):
         for p, protocol in enumerate(PROTOCOLS[:3]):
@@ -309,7 +338,7 @@ def make_fig(summary,
             # pt.plot(summary['t'], np.mean((resp_mB.T/norm.T).T, axis=0),
             pt.plot(summary['t'], 100.*np.mean(resp, axis=0),
                 sy=stats.sem(resp, axis=0),
-                color='C%i' % v, ax=AX[p])
+                color=get_virus_color(virus), ax=AX[p])
             # normalize
             if v==0:
                 insets.append(pt.inset(AX[p], [0.6,0.55,0.7,0.6]))
@@ -318,18 +347,18 @@ def make_fig(summary,
             norm = np.max(resp.mean(axis=0))
             pt.plot(summary['t'], np.mean(resp/norm, axis=0),
                 sy=stats.sem(resp/norm, axis=0),
-                color='C%i' % v, ax=insets[p])
+                color=get_virus_color(virus), ax=insets[p])
 
     pt.set_common_xlims(AX, lims=[-1.5,4])
     pt.set_common_ylims(AX)
 
     for ax in insets:
-        ax.plot(inset_lims, [0,0], ':', lw=0.4, color='C0')
+        ax.plot(inset_lims, [0,0], ':', lw=0.4, color='white')
         ax.annotate('0', (inset_lims[0], 0), ha='right', va='center')
-        ax.plot(inset_lims, [1,1], ':', lw=0.4, color='C0')
+        ax.plot(inset_lims, [1,1], ':', lw=0.4, color='white')
         ax.annotate('1', (inset_lims[0], 1), ha='right', va='center')
-        ax.plot(inset_lims[0]+np.zeros(2), [0,1], '-', color='C0')
-        ax.plot(inset_lims[1]-np.arange(2)*0.3, [-0.1,-0.1], '-', color='C0')
+        ax.plot(inset_lims[0]+np.zeros(2), [0,1], '-', color='white')
+        ax.plot(inset_lims[1]-np.arange(2)*0.3, [-0.1,-0.1], '-', color='white')
         ax.annotate('0.3s', (inset_lims[1], -0.2), ha='right', va='top')
         ax.axis('off')
     pt.set_common_ylims(insets)
@@ -340,13 +369,13 @@ def make_fig(summary,
             averaging = '(N=%i sessions)' % summary[virus]['tuning-low-contrast']['resp'].shape[0]
         elif summary['over']=='ROIs':
             averaging = '(n=%i ROIs)' % summary[virus]['tuning-low-contrast']['resp'].shape[0]
-        pt.annotate(ax, 2*v*'\n'+virus.split('+')[1]+ '\n%s' % averaging, 
-                (1.3,1.), va='top', color='C%i' % v)
+        pt.annotate(ax, 2*v*'\n'+virus+ '\n%s' % averaging, 
+                (1.3,1.), va='top', color=get_virus_color(virus))
 
     for ax, title in zip(AX, ['20%', '60%', '100%']):
         pt.set_plot(ax, 
                     yticks_labels=([] if ax!=AX[0] else None),
-                    ylabel=('$\delta$ deconv. (10$^2$ a.u.)     ' if ax==AX[0] else ''),
+                    ylabel=('$\\delta$ deconv. (10$^2$ a.u.)     ' if ax==AX[0] else ''),
                     xlabel='time (s)')
         pt.annotate(ax, 'c=%s' % title, (0,1), ha='center')
 
@@ -366,7 +395,7 @@ fig, ax = pt.figure(ax_scale=(1.3,1.1), right=10)
 inset = pt.inset(ax, [1.6, 0., 0.3, 1.])
 inset2 = pt.inset(ax, [2.4, 0., 0.3, 1.])
 
-viruses = np.unique(dataset['viruses'])[::-1]
+viruses = sort_viruses_by_order(np.unique(dataset['viruses']))
 contrasts = [20, 60 , 100]
 slopes, means = {}, {}
 for v, virus in enumerate(viruses):
@@ -381,25 +410,27 @@ for v, virus in enumerate(viruses):
         ax.bar([v+3*p],
             [np.mean(summary[virus][protocol]['frac_resp'])],
             yerr=[stats.sem(summary[virus][protocol]['frac_resp'])],
-            color='C%i' % v)
+            color=get_virus_color(virus))
     
     pt.scatter([v], [np.mean(slopes[virus])], 
                sy=[stats.sem(slopes[virus])],
-               color='C%i' % v, ax=inset)
+               color=get_virus_color(virus), ax=inset)
     pt.scatter([v], [np.mean(means[virus])], 
                sy=[stats.sem(means[virus])],
-               color='C%i' % v, ax=inset2)
+               color=get_virus_color(virus), ax=inset2)
 
 inset.annotate(
-    'p=%.3f' % stats.ttest_ind(slopes['CamKII-Cre+shScramble'],
-                        slopes['CamKII-Cre+shGrid1']).pvalue,
+    pt.from_pval_to_star(
+        stats.ttest_ind(slopes[viruses[0]],
+                        slopes[viruses[1]]).pvalue),
                (0.5,inset.get_ylim()[1]), ha='center')
 inset2.annotate(
-    'p=%.3f' % stats.ttest_ind(means['CamKII-Cre+shScramble'],
-                        means['CamKII-Cre+shGrid1']).pvalue,
+    pt.from_pval_to_star(
+        stats.ttest_ind(means[viruses[0]],
+                        means[viruses[1]]).pvalue,
     # pt.from_pval_to_star(
-    #     stats.ttest_ind(slopes['CamKII-Cre+shScramble'],
-    #            slopes['CamKII-Cre+shGrid1']).pvalue),
+    #     stats.ttest_ind(slopes[viruses[0]],
+    #            slopes[viruses[1]]).pvalue),
                (0.5,inset2.get_ylim()[1]), ha='center')
 
 pt.set_plot(inset, xticks=[], xlim=[-0.5,1.5],
@@ -420,8 +451,8 @@ for v, virus in enumerate(viruses):
     elif summary['over']=='ROIs':
         averaging = '(n=%i ROIs)' % summary[virus]['tuning-low-contrast']['resp'].shape[0]
 
-    pt.annotate(inset2, 2*v*'\n'+virus.split('+')[1]+ '\n%s' % averaging, 
-            (1,1), va='top', color='C%i' % v)
+    pt.annotate(inset2, 2*v*'\n'+virus+ '\n%s' % averaging, 
+            (1,1), va='top', color=get_virus_color(virus))
 
 pt.set_plot(ax,
             xticks=0.5+np.arange(3)*3,
@@ -430,127 +461,127 @@ pt.set_plot(ax,
 
 
 # %%
-if __name__=='__main__':
+#if __name__=='__main__':
 
-    from physion.assembling.dataset import read_spreadsheet
-
-    cpus = multiprocessing.cpu_count()-1 # leaving 1 cpu for the rest
-
-    # temporary folder for parallelization
-    os.makedirs(os.path.join(summary_folder, 'temp'), exist_ok=True)
-
-    Nstart = 0
-    Nend = len(datasets)
-
-    for n in range(Nstart, Nend):
-
-        c = list(datasets.keys())[n]
-
-        table = datasets[c]['datafolder'].replace('NWBs', 'DataTable.xlsx')
-
-        dataset_table, subjects_table, analysis =\
-                read_spreadsheet(table, get_metadata_from='table')
-        print()
-        print()
-        print('=================================================================')
-        print('-----------------------------------------------------------------')
-        print('------- %i) computing : %s ' % (n+1, c))
-        print('-----------------------------------------------------------------')
-        print()
-
-        DATASET = scan_folder_for_NWBfiles(datasets[c]['datafolder'])
-        
-        # FILTER
-        # 1) protocol type: orientation tuning
-        cond = np.array([np.sum(['8orientation' in p for p in protocols])\
-                        for protocols in DATASET['protocols']], dtype=bool)
-        # 2) age condition
-        if datasets[c]['age_interval'] is not None:
-            cond = cond &\
-                (DATASET['ages']>=datasets[c]['age_interval'][0]) &\
-                (DATASET['ages']<=datasets[c]['age_interval'][1])
-
-
-        if len(DATASET['files'][cond])>nMIN_DATAFILES:
-
-            if parallelized:
-                ################################################
-                ###    parallelization here !   #################
-                ################################################
-
-                nruns = int(len(DATASET['files'][cond])/cpus)+1
-
-                for r in range(nruns):
-                    i0 = r*cpus
-                    imax = np.min([i0+cpus, len(DATASET['files'][cond])]) 
-                    print(' - running set of files %i:%i' % (i0, imax))
-
-                    # start the processes
-                    procs = []
-                    for i in range(i0,imax):
-                        proc = multiprocessing.Process(\
-                                            target=process_file, 
-                                            args=(DATASET['files'][cond][i], i, c))
-                        procs.append(proc)
-                        proc.start()
-
-                    # complete the processes
-                    for proc in procs:
-                        proc.join()
-
-            else:
-                #####################################
-                ###### UN-PARALLELIZED VERSION ######
-                for i, f in enumerate(DATASET['files'][cond]):
-                    process_file(f, i, c)
-                #####################################
-
-            # now that we have stored all datafile outputs
-            Responses = []
-            for i, f in enumerate(DATASET['files'][cond]):
-
-                if os.path.isfile(os.path.join(summary_folder, 'temp', 
-                                              'tempResponse-%s-%i.npy' % (c, i))):
-                    Response = np.load(os.path.join(summary_folder, 'temp', 
-                                                'tempResponse-%s-%i.npy' % (c, i)),
-                                        allow_pickle=True).item()
-                    Responses.append(Response)
-
-            # # saving data
-            np.save(os.path.join(summary_folder, 'Deconvolved_%s.npy' % c), 
-                    Responses)
-
-        else:
-            print()
-            print('   [!!]   DATASET NOT LARGE ENOUGH   [!!] ')
-            print('               only N=%i sessions available' %\
-                                        len(DATASET['files'][cond]))
-            print('   [!!]   DATASET not analyzed       [!!] ')
-            print()
-
-        print('-----------------------------------------------------------------')
-        print('=================================================================')
-    # shutil.rmtree(os.path.join(summary_folder, 'temp'))
-
+#    from physion.assembling.dataset import read_spreadsheet
+#
+#    cpus = multiprocessing.cpu_count()-1 # leaving 1 cpu for the rest
+#
+#    # temporary folder for parallelization
+#    os.makedirs(os.path.join(summary_folder, 'temp'), exist_ok=True)
+#
+#    Nstart = 0
+#    Nend = len(datasets)
+#
+#    for n in range(Nstart, Nend):
+#
+#        c = list(datasets.keys())[n]
+#
+#        table = datasets[c]['datafolder'].replace('NWBs', 'DataTable.xlsx')
+#
+#        dataset_table, subjects_table, analysis =\
+#                read_spreadsheet(table, get_metadata_from='table')
+#        print()
+#        print()
+#        print('=================================================================')
+#        print('-----------------------------------------------------------------')
+#        print('------- %i) computing : %s ' % (n+1, c))
+#        print('-----------------------------------------------------------------')
+#        print()
+#
+#        DATASET = scan_folder_for_NWBfiles(datasets[c]['datafolder'])
+#        
+#        # FILTER
+#        # 1) protocol type: orientation tuning
+#        cond = np.array([np.sum(['8orientation' in p for p in protocols])\
+#                        for protocols in DATASET['protocols']], dtype=bool)
+#        # 2) age condition
+#        if datasets[c]['age_interval'] is not None:
+#            cond = cond &\
+#                (DATASET['ages']>=datasets[c]['age_interval'][0]) &\
+#                (DATASET['ages']<=datasets[c]['age_interval'][1])
+#
+#
+#        if len(DATASET['files'][cond])>nMIN_DATAFILES:
+#
+#            if parallelized:
+#                ################################################
+#                ###    parallelization here !   #################
+#                ################################################
+#
+#                nruns = int(len(DATASET['files'][cond])/cpus)+1
+#
+#                for r in range(nruns):
+#                    i0 = r*cpus
+#                    imax = np.min([i0+cpus, len(DATASET['files'][cond])]) 
+#                    print(' - running set of files %i:%i' % (i0, imax))
+#
+#                    # start the processes
+#                    procs = []
+#                    for i in range(i0,imax):
+#                        proc = multiprocessing.Process(\
+#                                            target=process_file, 
+#                                            args=(DATASET['files'][cond][i], i, c))
+#                        procs.append(proc)
+#                        proc.start()
+#
+#                    # complete the processes
+#                    for proc in procs:
+#                        proc.join()
+#
+#            else:
+#                #####################################
+#                ###### UN-PARALLELIZED VERSION ######
+#                for i, f in enumerate(DATASET['files'][cond]):
+#                    process_file(f, i, c)
+#                #####################################
+#
+#            # now that we have stored all datafile outputs
+#            Responses = []
+#            for i, f in enumerate(DATASET['files'][cond]):
+#
+#                if os.path.isfile(os.path.join(summary_folder, 'temp', 
+#                                              'tempResponse-%s-%i.npy' % (c, i))):
+#                    Response = np.load(os.path.join(summary_folder, 'temp', 
+#                                                'tempResponse-%s-%i.npy' % (c, i)),
+#                                        allow_pickle=True).item()
+#                    Responses.append(Response)
+#
+#            # # saving data
+#            np.save(os.path.join(summary_folder, 'Deconvolved_%s.npy' % c), 
+#                    Responses)
+#
+#        else:
+#            print()
+#            print('   [!!]   DATASET NOT LARGE ENOUGH   [!!] ')
+#            print('               only N=%i sessions available' %\
+#                                        len(DATASET['files'][cond]))
+#            print('   [!!]   DATASET not analyzed       [!!] ')
+#            print()
+#
+#        print('-----------------------------------------------------------------')
+#        print('=================================================================')
+#    # shutil.rmtree(os.path.join(summary_folder, 'temp'))
+#
 # %%
-if False:
-
-    import sys, os
-    sys.path += ['physion/src']
-    import physion.utils.plot_tools as pt
-    from scipy import stats
-    from physion.dataviz.episodes.temporal_dynamics\
-          import plot_response_dynamics
-
-    summary_folder = os.path.join(os.path.expanduser('~'), 
-                                'CURATED', 'Cibele', 'summary')
- 
-    fig, ax = plot_response_dynamics(\
-                        ['PV-cells_WT_Adult_V1_contrast-1.0', 
-                         'PV-cells_WT_Adult_V1_contrast-0.5'],
-                         colors=['tab:red', 'lightpink'],
-                        # average_by='ROIs',
-                        average_by='subjects',
-                        path=summary_folder)
-    
-    # %%
+#if False:
+#
+#    import sys, os
+#    sys.path += ['physion/src']
+#    import physion.utils.plot_tools as pt
+#    from scipy import stats
+#    from physion.dataviz.episodes.temporal_dynamics\
+#          import plot_response_dynamics
+#
+#    summary_folder = os.path.join(os.path.expanduser('~'), 
+#                                'CURATED', 'Cibele', 'summary')
+# 
+#    fig, ax = plot_response_dynamics(\
+#                        ['PV-cells_WT_Adult_V1_contrast-1.0', 
+#                         'PV-cells_WT_Adult_V1_contrast-0.5'],
+#                         colors=['tab:red', 'lightpink'],
+#                        # average_by='ROIs',
+#                        average_by='subjects',
+#                        path=summary_folder)
+#    
+#    # %%

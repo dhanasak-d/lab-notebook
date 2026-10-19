@@ -1,0 +1,21 @@
+{
+    "Presentation": "Stimuli-Sequence",
+    "Stimulus": "grating",
+    "Screen": "Dell-2020",
+    "movie_refresh_freq": 0.5,
+    "-----------------------------------------------------------------1": 0,
+    "presentation-duration": 120.0,
+    "presentation-interstim-period": 30.0,
+    "presentation-interstim-jitter": 3.0,
+    "presentation-prestim-period": 20.0,
+    "presentation-poststim-period": 20.0,
+    "presentation-blank-screen-color": 0.5,
+    "N-repeat": 5,
+    "-----------------------------------------------------------------3": 0,
+    "angle": 0.0,
+    "speed": 0.2,
+    "spatial-freq": 0.05,
+    "screen-color": 1.0,
+    "json_location": "../..",
+    "units": "cm"
+}
